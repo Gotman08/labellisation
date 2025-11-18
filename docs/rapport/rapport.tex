@@ -1,0 +1,375 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\geometry{margin=2.5cm}
+
+% Configuration des listings
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    frame=single,
+    breaklines=true
+}
+
+% Informations du document
+\title{\textbf{Projet : Labellisation des Composantes Connexes} \\ \large Traitement d'Images}
+\author{
+    Romain Despoullain \\
+    Nicolas Marano \\
+    Amin Braham
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+
+\subsection{Contexte}
+
+Le traitement d'images numériques est un domaine fondamental de l'informatique moderne, avec des applications variées allant de la vision par ordinateur à l'analyse médicale. Une image numérique (CM01) est définie comme une fonction discrète $f: \Omega \rightarrow V$ où $\Omega \subset \mathbb{Z}^2$ représente le domaine spatial et $V$ l'ensemble des valeurs possibles.
+
+Ce projet s'inscrit dans le cadre des \textbf{opérateurs non-linéaires} (CM02, CM05) et plus particulièrement du \textbf{cadre topologique} (CM05). Il vise à implémenter et comparer différentes méthodes de labellisation des composantes connexes d'une image binaire.
+
+\subsection{Objectif du projet}
+
+L'objectif principal est de \textbf{partitionner l'image en régions homogènes}, où l'homogénéité est définie par la connexité. Plus précisément, il s'agit de :
+\begin{itemize}
+    \item Identifier toutes les composantes connexes d'une image binaire
+    \item Affecter un label unique à chaque composante
+    \item Comparer différentes approches algorithmiques
+    \item Analyser leurs performances respectives
+\end{itemize}
+
+\subsection{Méthodes implémentées}
+
+Quatre algorithmes ont été implémentés et comparés :
+\begin{enumerate}
+    \item \textbf{Algorithme en deux passes} : Approche classique avec table d'équivalence
+    \item \textbf{Union-Find} : Structure de données Disjoint-Set optimisée
+    \item \textbf{Kruskal} : Approche par graphe (Minimum Spanning Tree)
+    \item \textbf{Prim} : Approche par exploration (BFS/DFS)
+\end{enumerate}
+
+% ============================================================================
+\section{Fondements Théoriques}
+% ============================================================================
+
+\subsection{Topologie Discrète (CM03)}
+
+\subsubsection{Adjacence}
+
+La notion de connexité repose sur la \textbf{topologie discrète} (CM03). Le point de départ est la notion d'\textbf{adjacence} entre pixels.
+
+\paragraph{Adjacence forte (4-connexité) :} Deux pixels $x$ et $y$ sont adjacents si :
+\begin{equation}
+    ||x - y||_1 = 1
+\end{equation}
+
+Cette définition correspond aux 4 voisins directs (Nord, Sud, Est, Ouest).
+
+\paragraph{Adjacence faible (8-connexité) :} Deux pixels $x$ et $y$ sont adjacents si :
+\begin{equation}
+    ||x - y||_\infty = 1
+\end{equation}
+
+Cette définition inclut également les voisins diagonaux.
+
+\subsubsection{Paradoxe de Jordan et Dualité}
+
+Le \textbf{paradoxe de l'échiquier de Jordan} (CM03) démontre qu'on ne peut pas utiliser la même adjacence pour l'objet et le fond. Pour avoir une topologie cohérente (par exemple, pour qu'un "cercle" de pixels ait bien un intérieur et un extérieur), il faut utiliser des \textbf{adjacences duales} (CM03) :
+
+\begin{itemize}
+    \item 4-connexité pour l'objet (pixels blancs)
+    \item 8-connexité pour le fond (pixels noirs)
+\end{itemize}
+
+\subsection{Modèles Mathématiques (CM05)}
+
+Le cours CM05 fournit deux modèles formels pour la labellisation :
+
+\subsubsection{Modèle en Graphe}
+
+L'image est vue comme un \textbf{graphe} $G = (V, E)$ où :
+\begin{itemize}
+    \item $V$ = ensemble des pixels (sommets)
+    \item $E$ = ensemble des liens d'adjacence (arêtes)
+\end{itemize}
+
+Ce modèle est la base des algorithmes de Kruskal et Prim.
+
+\subsubsection{Modèle en Partition}
+
+Le but de la labellisation est de trouver une \textbf{partition} $P$ de l'image telle que :
+\begin{equation}
+    \forall X, Y \in P, X \neq Y \Rightarrow X \cap Y = \emptyset
+\end{equation}
+\begin{equation}
+    \bigcup P = \Omega
+\end{equation}
+
+Ce modèle est la base de l'algorithme Union-Find.
+
+% ============================================================================
+\section{Méthodologie et Implémentation}
+% ============================================================================
+
+\subsection{Contraintes d'implémentation}
+
+Le projet a été développé en C++ avec les contraintes suivantes :
+\begin{itemize}
+    \item \textbf{Aucune bibliothèque externe} (pas d'OpenCV)
+    \item Toutes les fonctions de base (\texttt{min}, \texttt{max}, \texttt{mean}) implémentées manuellement
+    \item Lecture/écriture d'images au format PGM/PPM codée from scratch
+    \item Code optimisé pour la performance
+\end{itemize}
+
+\subsection{Algorithme en Deux Passes}
+
+\subsubsection{Principe}
+
+L'algorithme en deux passes est l'approche classique décrite dans la littérature.
+
+\paragraph{Première passe :} Étiquetage provisoire
+\begin{algorithm}[H]
+\caption{Première passe}
+\begin{algorithmic}[1]
+\State $label \gets 1$
+\For{chaque pixel $(x, y)$ de gauche à droite, haut en bas}
+    \If{pixel est objet}
+        \State $N \gets$ voisins déjà traités qui sont objets
+        \If{$N = \emptyset$}
+            \State Affecter nouveau label et incrémenter
+        \Else
+            \State Affecter $\min(labels(N))$
+            \State Enregistrer équivalences entre labels
+        \EndIf
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Deuxième passe :} Relabellisation finale avec résolution des équivalences.
+
+\subsubsection{Complexité}
+
+\begin{itemize}
+    \item \textbf{Temps :} $O(N)$ où $N$ est le nombre de pixels
+    \item \textbf{Espace :} $O(N + L)$ où $L$ est le nombre de labels provisoires
+\end{itemize}
+
+\subsubsection{Avantages}
+
+\begin{itemize}
+    \item Excellente localité cache (parcours séquentiel)
+    \item Simple à implémenter
+    \item Très efficace en pratique
+\end{itemize}
+
+\subsection{Algorithme Union-Find}
+
+\subsubsection{Principe}
+
+Utilise la structure de données Disjoint-Set avec les optimisations :
+\begin{itemize}
+    \item \textbf{Path compression} : lors de \texttt{Find}, tous les nœuds parcourus pointent directement vers la racine
+    \item \textbf{Union by rank} : lors de \texttt{Union}, l'arbre de rang inférieur est attaché sous l'arbre de rang supérieur
+\end{itemize}
+
+\subsubsection{Complexité}
+
+\begin{itemize}
+    \item \textbf{Temps :} $O(N \cdot \alpha(N))$ où $\alpha$ est l'inverse d'Ackermann (< 5 en pratique)
+    \item \textbf{Espace :} $O(N)$
+\end{itemize}
+
+\subsection{Algorithme de Kruskal}
+
+\subsubsection{Principe}
+
+Kruskal est un algorithme de Minimum Spanning Tree adapté à la labellisation :
+\begin{enumerate}
+    \item Construire la liste des arêtes entre pixels adjacents
+    \item Trier les arêtes (toutes de poids 1)
+    \item Pour chaque arête $(u, v)$ : si $u$ et $v$ dans composantes différentes, fusionner
+\end{enumerate}
+
+Le résultat est une \textbf{forêt couvrante} où chaque arbre = une composante connexe.
+
+\subsubsection{Complexité}
+
+\begin{itemize}
+    \item \textbf{Temps :} $O(E \log E)$ où $E \approx 2N$ (4-conn) ou $4N$ (8-conn)
+    \item \textbf{Espace :} $O(E + V)$
+\end{itemize}
+
+\subsection{Algorithme de Prim}
+
+\subsubsection{Principe}
+
+Version simplifiée basée sur BFS (toutes les arêtes ont le même poids) :
+\begin{enumerate}
+    \item Pour chaque pixel non labellisé
+    \item Lancer BFS pour explorer toute sa composante
+    \item Affecter le même label à tous les pixels atteints
+\end{enumerate}
+
+\subsubsection{Complexité}
+
+\begin{itemize}
+    \item \textbf{Temps :} $O(N)$
+    \item \textbf{Espace :} $O(N)$ pour la file BFS
+\end{itemize}
+
+% ============================================================================
+\section{Résultats et Analyse}
+% ============================================================================
+
+\subsection{Configuration des tests}
+
+Les tests ont été effectués sur :
+\begin{itemize}
+    \item Processeur : [À compléter avec votre config]
+    \item RAM : [À compléter]
+    \item Compilateur : g++ avec flag \texttt{-O3}
+\end{itemize}
+
+\subsection{Résultats de benchmark}
+
+\subsubsection{Tableau comparatif}
+
+% À compléter avec vos résultats de benchmark
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Algorithme} & \textbf{Moyenne (ms)} & \textbf{Écart-type} & \textbf{Speedup} \\ \hline
+Two-Pass       & XX.XX & X.XX & 1.0x \\ \hline
+Union-Find     & XX.XX & X.XX & X.Xx \\ \hline
+Kruskal        & XX.XX & X.XX & X.Xx \\ \hline
+Prim           & XX.XX & X.XX & X.Xx \\ \hline
+\end{tabular}
+\caption{Comparaison des performances (image 512x512, 4-connexité)}
+\end{table}
+
+\subsection{Analyse comparative}
+
+\subsubsection{Efficacité pratique}
+
+D'après la littérature et nos observations :
+\begin{itemize}
+    \item \textbf{Two-Pass} : Souvent le plus rapide grâce à la localité cache
+    \item \textbf{Union-Find} : Comparable, légèrement moins bon en cache
+    \item \textbf{Kruskal} : Plus lent à cause du tri des arêtes
+    \item \textbf{Prim (BFS)} : Performance similaire à Union-Find
+\end{itemize}
+
+\subsubsection{Avantages et inconvénients}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{|p{3cm}|p{5cm}|p{5cm}|}
+\hline
+\textbf{Algorithme} & \textbf{Avantages} & \textbf{Inconvénients} \\ \hline
+Two-Pass &
+- Excellente localité cache
+- Simple
+- Rapide en pratique &
+- Deux passes complètes
+- Table d'équivalence \\ \hline
+Union-Find &
+- Une seule passe principale
+- Élégant (théorie des partitions)
+- Structure réutilisable &
+- Accès mémoire non-séquentiels
+- Plus de mémoire (rank + parent) \\ \hline
+Kruskal &
+- Basé sur théorie des graphes
+- Facile à comprendre &
+- Tri des arêtes coûteux
+- Stockage de toutes les arêtes \\ \hline
+Prim (BFS) &
+- Simple
+- Bonne localité
+- Une passe &
+- Utilise une file (overhead mémoire) \\ \hline
+\end{tabular}
+\caption{Comparaison qualitative des algorithmes}
+\end{table}
+
+% ============================================================================
+\section{Conclusion}
+% ============================================================================
+
+Ce projet a permis d'implémenter et de comparer quatre approches différentes pour la labellisation des composantes connexes. Chaque algorithme présente des caractéristiques uniques :
+
+\begin{itemize}
+    \item \textbf{Two-Pass} reste l'approche la plus efficace en pratique
+    \item \textbf{Union-Find} offre une vision élégante basée sur les partitions
+    \item \textbf{Kruskal et Prim} illustrent l'application de la théorie des graphes
+\end{itemize}
+
+L'implémentation complète from scratch (sans bibliothèques externes) a permis de comprendre en profondeur les mécanismes sous-jacents et d'apprécier les subtilités de chaque approche.
+
+\subsection{Perspectives}
+
+Des améliorations possibles incluent :
+\begin{itemize}
+    \item Parallélisation des algorithmes
+    \item Extension aux images en niveaux de gris (watershed)
+    \item Optimisations SIMD pour Two-Pass
+\end{itemize}
+
+% ============================================================================
+\section*{Répartition du travail}
+% ============================================================================
+
+\begin{itemize}
+    \item \textbf{Romain Despoullain} : [À compléter - ex: Two-Pass et Union-Find, sections théoriques]
+    \item \textbf{Nicolas Marano} : [À compléter - ex: Kruskal et Prim, benchmarks]
+    \item \textbf{Amin Braham} : [À compléter - ex: I/O, tests, rapport LaTeX]
+\end{itemize}
+
+% ============================================================================
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+
+\bibitem{cm03}
+Support de cours CM03 - Topologie Discrète
+
+\bibitem{cm05}
+Support de cours CM05 - Opérateurs Connexes
+
+\bibitem{esiee}
+Support ESIEE - Labellisation des Composantes Connexes
+
+\end{thebibliography}
+
+\end{document}

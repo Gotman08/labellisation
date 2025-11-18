@@ -1,0 +1,49 @@
+# Build directories
+build/
+cmake-build-*/
+
+# Compiled objects
+*.o
+*.obj
+*.exe
+*.out
+*.app
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Executables
+labellisation
+test_*
+benchmark
+
+# Images output (keep input images)
+images/output/*
+!images/output/.gitkeep
+
+# LaTeX
+docs/**/*.aux
+docs/**/*.log
+docs/**/*.out
+docs/**/*.toc
+docs/**/*.pdf
+docs/**/*.synctex.gz
+docs/**/*.fdb_latexmk
+docs/**/*.fls
+docs/**/*.nav
+docs/**/*.snm
+docs/**/*.vrb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

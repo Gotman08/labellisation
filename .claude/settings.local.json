@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(cmake:*)",
+      "Bash(g++:*)",
+      "Bash(./test_algorithms.exe:*)",
+      "Bash(./labellisation.exe:*)",
+      "Bash(gdb:*)",
+      "Bash(./test_read.exe:*)",
+      "Bash(./test_binarize.exe:*)",
+      "Bash(./test_read_new.exe:*)",
+      "Bash(./test_read3.exe:*)",
+      "Bash(./test_read_debug2.exe:*)",
+      "Bash(./test_read_O1.exe:*)",
+      "Bash(for algo in union_find kruskal prim)",
+      "Bash(do echo \"=== Test $algo ===\")",
+      "Bash(done)",
+      "Bash(./benchmark.exe:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -1,0 +1,405 @@
+\documentclass{beamer}
+
+% Thème
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+
+% Configuration des listings
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    frame=single,
+    breaklines=true
+}
+
+% Informations
+\title{Labellisation des Composantes Connexes}
+\subtitle{Comparaison de 4 algorithmes}
+\author{Romain Despoullain \and Nicolas Marano \and Amin Braham}
+\date{\today}
+\institute{[Votre École/Université]}
+
+\begin{document}
+
+% ============================================================================
+% Page de titre
+% ============================================================================
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+% ============================================================================
+% Sommaire
+% ============================================================================
+
+\begin{frame}{Plan de la présentation}
+    \tableofcontents
+\end{frame}
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+
+\begin{frame}{Contexte}
+    \begin{block}{Objectif}
+        Partitionner une image binaire en régions homogènes (composantes connexes)
+    \end{block}
+
+    \vspace{0.5cm}
+
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Entrée :}
+        \begin{itemize}
+            \item Image binaire
+            \item Type de connexité (4 ou 8)
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Sortie :}
+        \begin{itemize}
+            \item Image labellisée
+            \item Chaque composante = label unique
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Applications}
+    \begin{itemize}
+        \item \textbf{Vision par ordinateur} : détection d'objets
+        \item \textbf{Imagerie médicale} : segmentation d'organes
+        \item \textbf{Analyse de documents} : extraction de caractères (OCR)
+        \item \textbf{Robotique} : navigation, reconnaissance d'obstacles
+    \end{itemize}
+\end{frame}
+
+% ============================================================================
+\section{Fondements Théoriques}
+% ============================================================================
+
+\begin{frame}{Topologie Discrète (CM03)}
+    \begin{block}{Adjacence}
+        \textbf{4-connexité} (adjacence forte) : $||x - y||_1 = 1$
+        \begin{center}
+            \begin{tabular}{ccc}
+                 & N & \\
+                O & P & E \\
+                 & S &
+            \end{tabular}
+        \end{center}
+
+        \vspace{0.3cm}
+
+        \textbf{8-connexité} (adjacence faible) : $||x - y||_\infty = 1$
+        \begin{center}
+            \begin{tabular}{ccc}
+                NO & N & NE \\
+                O & P & E \\
+                SO & S & SE
+            \end{tabular}
+        \end{center}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Paradoxe de Jordan}
+    \begin{alertblock}{Problème}
+        On ne peut pas utiliser la même adjacence pour l'objet et le fond !
+    \end{alertblock}
+
+    \vspace{0.5cm}
+
+    \begin{block}{Solution : Adjacences duales}
+        \begin{itemize}
+            \item 4-connexité pour l'objet
+            \item 8-connexité pour le fond
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Modèles Mathématiques (CM05)}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Modèle Graphe}
+        \begin{itemize}
+            \item Pixels = sommets
+            \item Adjacences = arêtes
+            \item Base pour Kruskal/Prim
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Modèle Partition}
+        \begin{itemize}
+            \item Ensembles disjoints
+            \item Couvrant toute l'image
+            \item Base pour Union-Find
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ============================================================================
+\section{Les 4 Algorithmes}
+% ============================================================================
+
+\begin{frame}{Vue d'ensemble}
+    \begin{enumerate}
+        \item \textbf{Two-Pass} : Approche classique en 2 passes
+        \item \textbf{Union-Find} : Structure Disjoint-Set
+        \item \textbf{Kruskal} : Minimum Spanning Tree
+        \item \textbf{Prim} : Exploration BFS
+    \end{enumerate}
+\end{frame}
+
+% ------------ Two-Pass ------------
+
+\begin{frame}{Algorithme Two-Pass}
+    \begin{block}{Principe}
+        \begin{enumerate}
+            \item \textbf{Passe 1} : Étiquetage provisoire + table d'équivalence
+            \item \textbf{Résolution} : Calcul des labels racine
+            \item \textbf{Passe 2} : Relabellisation finale
+        \end{enumerate}
+    \end{block}
+
+    \vspace{0.3cm}
+
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Avantages}
+        \begin{itemize}
+            \item Excellent cache locality
+            \item Rapide en pratique
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Complexité}
+        \begin{itemize}
+            \item Temps : $O(N)$
+            \item Espace : $O(N)$
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ------------ Union-Find ------------
+
+\begin{frame}{Algorithme Union-Find}
+    \begin{block}{Structure Disjoint-Set}
+        \begin{itemize}
+            \item Chaque pixel = ensemble singleton
+            \item \texttt{Find(x)} : trouve le représentant
+            \item \texttt{Union(x, y)} : fusionne deux ensembles
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.3cm}
+
+    \begin{block}{Optimisations}
+        \begin{itemize}
+            \item \textbf{Path compression} : accélère Find
+            \item \textbf{Union by rank} : maintient l'arbre plat
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.3cm}
+
+    \textbf{Complexité :} $O(N \cdot \alpha(N)) \approx O(N)$ où $\alpha < 5$
+\end{frame}
+
+% ------------ Kruskal ------------
+
+\begin{frame}{Algorithme de Kruskal}
+    \begin{block}{Principe (MST)}
+        \begin{enumerate}
+            \item Construire les arêtes du graphe
+            \item Trier les arêtes par poids
+            \item Pour chaque arête : fusionner si composantes différentes
+        \end{enumerate}
+    \end{block}
+
+    \vspace{0.3cm}
+
+    \begin{alertblock}{Adaptation}
+        Toutes les arêtes ont poids = 1 $\Rightarrow$ Produit une forêt couvrante
+    \end{alertblock}
+
+    \vspace{0.3cm}
+
+    \textbf{Complexité :} $O(E \log E)$ où $E \approx 2N$ ou $4N$
+\end{frame}
+
+% ------------ Prim ------------
+
+\begin{frame}{Algorithme de Prim}
+    \begin{block}{Principe (BFS simplifié)}
+        Pour chaque pixel non labellisé :
+        \begin{enumerate}
+            \item Créer un nouveau label
+            \item Lancer BFS pour explorer sa composante
+            \item Affecter ce label à tous les pixels atteints
+        \end{enumerate}
+    \end{block}
+
+    \vspace{0.3cm}
+
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Avantages}
+        \begin{itemize}
+            \item Simple
+            \item Une seule passe
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Complexité}
+        \begin{itemize}
+            \item Temps : $O(N)$
+            \item Espace : $O(N)$
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ============================================================================
+\section{Implémentation}
+% ============================================================================
+
+\begin{frame}{Contraintes techniques}
+    \begin{alertblock}{Implémentation from scratch}
+        \begin{itemize}
+            \item Aucune bibliothèque externe (pas d'OpenCV)
+            \item Fonctions \texttt{min/max/mean} recréées manuellement
+            \item Lecture/écriture PGM/PPM codée à la main
+            \item Optimisé pour la performance
+        \end{itemize}
+    \end{alertblock}
+
+    \vspace{0.5cm}
+
+    \begin{block}{Technologies}
+        \begin{itemize}
+            \item Langage : C++17
+            \item Build : CMake
+            \item Tests unitaires intégrés
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Architecture du code}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Modules}
+        \begin{itemize}
+            \item \texttt{core/} : Image, LabelImage
+            \item \texttt{io/} : Lecture/écriture PGM
+            \item \texttt{algorithms/} : Les 4 algos
+            \item \texttt{utils/} : Fonctions utilitaires
+        \end{itemize}
+
+        \column{0.5\textwidth}
+        \textbf{Outils}
+        \begin{itemize}
+            \item \texttt{main.cpp} : CLI
+            \item \texttt{tests/} : Tests unitaires
+            \item \texttt{benchmarks/} : Comparaisons
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+% ============================================================================
+\section{Résultats}
+% ============================================================================
+
+\begin{frame}{Résultats de benchmark}
+    \begin{table}
+    \centering
+    \small
+    \begin{tabular}{|l|c|c|c|}
+    \hline
+    \textbf{Algorithme} & \textbf{Temps (ms)} & \textbf{Écart-type} & \textbf{Speedup} \\ \hline
+    Two-Pass     & XX.XX & X.XX & 1.0x \\ \hline
+    Union-Find   & XX.XX & X.XX & X.Xx \\ \hline
+    Kruskal      & XX.XX & X.XX & X.Xx \\ \hline
+    Prim         & XX.XX & X.XX & X.Xx \\ \hline
+    \end{tabular}
+    \end{table}
+
+    \vspace{0.5cm}
+
+    \small
+    Configuration : Image 512×512, 4-connexité, moyenne sur 10 runs
+\end{frame}
+
+\begin{frame}{Analyse comparative}
+    \begin{block}{Observations}
+        \begin{itemize}
+            \item \textbf{Two-Pass} : Le plus rapide (localité cache)
+            \item \textbf{Union-Find} : Comparable, légèrement plus lent
+            \item \textbf{Kruskal} : Plus lent (tri des arêtes)
+            \item \textbf{Prim} : Performance similaire à Union-Find
+        \end{itemize}
+    \end{block}
+
+    \vspace{0.5cm}
+
+    \begin{alertblock}{Conclusion}
+        Tous les algorithmes donnent le même résultat !
+
+        Différences = compromis temps/mémoire/complexité
+    \end{alertblock}
+\end{frame}
+
+% ============================================================================
+\section{Conclusion}
+% ============================================================================
+
+\begin{frame}{Bilan}
+    \textbf{Réalisations :}
+    \begin{itemize}
+        \item 4 algorithmes implémentés et testés
+        \item Code optimisé sans bibliothèques externes
+        \item Tests unitaires et benchmarks complets
+        \item Documentation LaTeX complète
+    \end{itemize}
+
+    \vspace{0.5cm}
+
+    \textbf{Apports pédagogiques :}
+    \begin{itemize}
+        \item Compréhension approfondie de la connexité
+        \item Maîtrise des structures de données (Union-Find)
+        \item Application de la théorie des graphes (MST)
+        \item Analyse de performance
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Perspectives}
+    \textbf{Améliorations possibles :}
+    \begin{itemize}
+        \item Parallélisation (OpenMP, CUDA)
+        \item Extension aux images en niveaux de gris (watershed)
+        \item Optimisations SIMD (AVX2)
+        \item Support d'autres formats (PNG, JPEG)
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+    \Huge Merci pour votre attention !
+
+    \vspace{1cm}
+
+    \Large Questions ?
+\end{frame}
+
+\end{document}
