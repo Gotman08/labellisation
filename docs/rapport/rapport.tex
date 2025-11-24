@@ -19,14 +19,14 @@
 
 \geometry{margin=2.5cm}
 
-% Configuration des en-têtes
+% En-têtes de page
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small Labellisation des Composantes Connexes}
 \fancyhead[R]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
-% Configuration des listings
+% Listings Python
 \lstset{
     language=Python,
     basicstyle=\ttfamily\footnotesize,
@@ -40,7 +40,7 @@
     xleftmargin=1em
 }
 
-% Configuration hyperref
+% Hyperref
 \hypersetup{
     colorlinks=true,
     linkcolor=black,
@@ -49,7 +49,7 @@
     pdfauthor={Despoullain, Marano, Braham}
 }
 
-% Espacement des sections
+% Espacement sections
 \titlespacing*{\section}{0pt}{2ex plus 1ex minus .2ex}{1.5ex plus .2ex}
 \titlespacing*{\subsection}{0pt}{1.5ex plus 1ex minus .2ex}{1ex plus .2ex}
 
@@ -88,12 +88,13 @@ Amin Braham
 \end{titlepage}
 
 % ===========================================
-% RÉSUMÉ
+% RÉSUMÉ ET TABLE DES MATIÈRES
 % ===========================================
 \thispagestyle{empty}
-\section*{Résumé}
 
-Ce rapport présente une étude comparative de quatre algorithmes de labellisation des composantes connexes : Two-Pass, Union-Find, Kruskal et Prim. L'implémentation Python utilise NumPy/OpenCV uniquement pour le chargement des images. Les résultats montrent que Two-Pass et Union-Find offrent les meilleures performances, tandis que Kruskal présente un surcoût dû à la création explicite des arêtes.
+\begin{abstract}
+Ce rapport présente une étude comparative de quatre algorithmes de labellisation des composantes connexes pour images binaires : Two-Pass, Union-Find, Kruskal et Prim. L'implémentation a été réalisée en Python avec la contrainte que NumPy et OpenCV ne sont utilisés que pour le chargement des images ; tous les traitements algorithmiques sont effectués manuellement. Les expérimentations menées sur trois images de test avec les connectivités 4 et 8 démontrent que les algorithmes Two-Pass et Union-Find offrent les meilleures performances, tandis que Kruskal présente un surcoût significatif dû à la création explicite des arêtes du graphe.
+\end{abstract}
 
 \vspace{1cm}
 \tableofcontents
@@ -106,33 +107,39 @@ Ce rapport présente une étude comparative de quatre algorithmes de labellisati
 % ===========================================
 \section{Introduction}
 
-\subsection{Contexte}
+\subsection{Contexte et motivation}
 
-La \textbf{labellisation des composantes connexes} (CCL) est une opération fondamentale en traitement d'images. Elle consiste à identifier et étiqueter les régions connexes dans une image binaire.
+La \textbf{labellisation des composantes connexes} (Connected Component Labeling - CCL) est une opération fondamentale en traitement d'images numériques. Elle consiste à identifier et étiqueter les régions connexes dans une image binaire, c'est-à-dire les ensembles de pixels adjacents partageant la même valeur.
 
-Applications principales :
+Cette technique trouve des applications dans de nombreux domaines :
 \begin{itemize}
-    \item Vision par ordinateur : détection d'objets
-    \item Analyse de documents : segmentation de caractères
-    \item Imagerie médicale : identification de structures
-    \item Contrôle qualité industriel
+    \item \textbf{Vision par ordinateur} : détection et reconnaissance d'objets
+    \item \textbf{Analyse de documents} : segmentation de caractères, extraction de texte
+    \item \textbf{Imagerie médicale} : identification de structures anatomiques
+    \item \textbf{Contrôle qualité industriel} : inspection automatique de produits
 \end{itemize}
 
 \subsection{Définition formelle}
 
-Soit une image binaire $I : \Omega \rightarrow \{0, 1\}$. La labellisation consiste à trouver $L : \Omega \rightarrow \mathbb{N}$ telle que :
+Soit une image binaire $I : \Omega \rightarrow \{0, 1\}$ où $\Omega \subset \mathbb{Z}^2$ représente le domaine de l'image. Le problème de la labellisation consiste à trouver une fonction $L : \Omega \rightarrow \mathbb{N}$ telle que :
 \begin{equation}
     L(p) = L(q) \Leftrightarrow p \sim q
 \end{equation}
-où $p \sim q$ signifie qu'il existe un chemin de pixels adjacents reliant $p$ à $q$.
+où $p \sim q$ signifie que les pixels $p$ et $q$ appartiennent à la même composante connexe, c'est-à-dire qu'il existe un chemin de pixels adjacents de valeur 1 reliant $p$ à $q$.
 
-\subsection{Objectifs}
+\subsection{Objectifs du projet}
 
+Ce projet vise à :
 \begin{enumerate}
-    \item Implémenter quatre algorithmes de labellisation
-    \item Comparer leurs performances
-    \item Analyser l'impact de la connectivité (4 vs 8 voisins)
+    \item Implémenter quatre algorithmes de labellisation des composantes connexes
+    \item Comparer leurs performances sur différentes images et configurations
+    \item Analyser l'impact de la connectivité (4 vs 8 voisins) sur les résultats
+    \item Fournir une analyse statistique basée sur des benchmarks reproductibles
 \end{enumerate}
+
+\subsection{Contraintes d'implémentation}
+
+Le projet a été développé en Python avec une contrainte importante : \textbf{NumPy et OpenCV ne sont utilisés que pour le chargement et la sauvegarde des images}. Toutes les opérations algorithmiques (parcours, comparaisons, structures de données) sont implémentées manuellement.
 
 % ===========================================
 % FONDEMENTS THÉORIQUES
@@ -140,35 +147,50 @@ où $p \sim q$ signifie qu'il existe un chemin de pixels adjacents reliant $p$ �
 \newpage
 \section{Fondements Théoriques}
 
-\subsection{Adjacence et connexité}
+\subsection{Topologie Discrète}
 
-\paragraph{4-adjacence} Deux pixels $p$ et $q$ sont 4-adjacents si :
+\subsubsection{Notion d'adjacence}
+
+La connexité entre pixels repose sur la notion d'\textbf{adjacence}. Pour deux pixels $p = (x_1, y_1)$ et $q = (x_2, y_2)$, on définit :
+
+\paragraph{4-adjacence (connexité forte) :} Les pixels sont 4-adjacents si et seulement si :
 \begin{equation}
     |x_1 - x_2| + |y_1 - y_2| = 1
 \end{equation}
+Cela correspond aux quatre voisins directs : Nord, Sud, Est, Ouest.
 
-\paragraph{8-adjacence} Deux pixels sont 8-adjacents si :
+\paragraph{8-adjacence (connexité faible) :} Les pixels sont 8-adjacents si et seulement si :
 \begin{equation}
     \max(|x_1 - x_2|, |y_1 - y_2|) = 1
 \end{equation}
+Cela inclut les quatre voisins diagonaux en plus des voisins directs.
 
-\subsection{Paradoxe de Jordan}
+\subsubsection{Composante connexe}
 
-Le choix de la même connexité pour l'objet et le fond crée des incohérences topologiques. Solution : utiliser des adjacences duales (4-connexité pour l'objet, 8-connexité pour le fond).
+Une \textbf{composante connexe} $C$ est un sous-ensemble maximal de pixels tel que pour tout couple $(p, q) \in C^2$, il existe une chaîne de pixels $(p_0, p_1, ..., p_n)$ avec $p_0 = p$, $p_n = q$, et $p_i$ adjacent à $p_{i+1}$.
+
+\subsubsection{Paradoxe de Jordan}
+
+Le \textbf{paradoxe de l'échiquier de Jordan} démontre l'importance du choix de la connexité. Si l'on utilise la même connexité pour l'objet et le fond, des incohérences topologiques apparaissent. La solution standard consiste à utiliser des \textbf{adjacences duales} : 4-connexité pour l'objet et 8-connexité pour le fond (ou vice-versa).
 
 \subsection{Modélisation par graphe}
 
-L'image est modélisée comme un graphe $G = (V, E)$ où $V$ représente les pixels et $E$ les adjacences. Les composantes connexes correspondent aux composantes connexes du graphe.
+L'image peut être modélisée comme un graphe non orienté $G = (V, E)$ :
+\begin{itemize}
+    \item $V$ : ensemble des pixels (sommets)
+    \item $E$ : ensemble des paires de pixels adjacents de même valeur (arêtes)
+\end{itemize}
+Les composantes connexes correspondent aux \textbf{composantes connexes du graphe}.
 
 \subsection{Structure Union-Find}
 
-Structure permettant de gérer une partition avec deux opérations :
+La structure de données \textbf{Union-Find} (ou Disjoint-Set) permet de gérer efficacement une partition d'un ensemble avec deux opérations :
 \begin{itemize}
     \item \texttt{Find(x)} : retourne le représentant de l'ensemble contenant $x$
     \item \texttt{Union(x, y)} : fusionne les ensembles contenant $x$ et $y$
 \end{itemize}
 
-Avec compression de chemin et union par rang, la complexité amortie est $O(\alpha(n))$ (quasi-constante).
+Avec les optimisations de \textbf{compression de chemin} et d'\textbf{union par rang}, la complexité amortie de chaque opération est $O(\alpha(n))$, où $\alpha$ est la fonction inverse d'Ackermann (pratiquement constante).
 
 % ===========================================
 % ALGORITHMES
@@ -176,37 +198,52 @@ Avec compression de chemin et union par rang, la complexité amortie est $O(\alp
 \newpage
 \section{Description des Algorithmes}
 
-\subsection{Two-Pass}
+\subsection{Algorithme Two-Pass}
 
-Algorithme classique en deux passes :
+\subsubsection{Principe}
+
+L'algorithme Two-Pass effectue deux parcours complets de l'image :
 
 \begin{algorithm}[H]
-\caption{Two-Pass}
+\caption{Two-Pass - Première passe}
 \begin{algorithmic}[1]
-\State \textbf{Passe 1 :} Attribution d'étiquettes provisoires
-\For{chaque pixel $(x, y)$ de l'image}
-    \If{pixel est objet}
-        \State Examiner les voisins déjà traités
-        \If{aucun voisin labellisé}
-            \State Créer nouveau label
+\State $label \gets 1$
+\State Initialiser table d'équivalences $equiv$
+\For{$(x, y) \in \Omega$ (parcours raster)}
+    \If{$I(x, y) = 1$}
+        \State $N \gets$ \{voisins déjà traités avec $I(n) = 1$\}
+        \If{$N = \emptyset$}
+            \State $L(x, y) \gets label$; $label \gets label + 1$
         \Else
-            \State Prendre le min des labels voisins
-            \State Enregistrer les équivalences
+            \State $L(x, y) \gets \min_{n \in N} L(n)$
+            \For{$n \in N$} $equiv.\text{union}(L(x, y), L(n))$ \EndFor
         \EndIf
     \EndIf
-\EndFor
-\State \textbf{Passe 2 :} Résolution des équivalences
-\For{chaque pixel}
-    \State Remplacer label par sa racine
 \EndFor
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Complexité :} $O(n)$ en temps et espace.
+\begin{algorithm}[H]
+\caption{Two-Pass - Deuxième passe}
+\begin{algorithmic}[1]
+\For{$(x, y) \in \Omega$}
+    \If{$L(x, y) > 0$}
+        \State $L(x, y) \gets equiv.\text{find}(L(x, y))$
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
 
-\subsection{Union-Find}
+\subsubsection{Complexité et avantages}
+\begin{itemize}
+    \item \textbf{Temporelle :} $O(n)$ où $n$ est le nombre de pixels
+    \item \textbf{Spatiale :} $O(n)$ pour l'image de labels
+    \item \textbf{Avantages :} Excellente localité de cache, simple à implémenter
+\end{itemize}
 
-Utilise directement la structure Union-Find. Chaque pixel forme initialement son propre ensemble, puis les ensembles sont fusionnés lors du parcours.
+\subsection{Algorithme Union-Find}
+
+Cet algorithme utilise directement la structure Union-Find. Chaque pixel forme initialement son propre ensemble, puis les ensembles sont fusionnés lors du parcours.
 
 \begin{lstlisting}[caption=Compression de chemin]
 def find(self, x):
@@ -215,30 +252,46 @@ def find(self, x):
     return self.parent[x]
 \end{lstlisting}
 
-\textbf{Complexité :} $O(n \cdot \alpha(n)) \approx O(n)$
+\textbf{Complexité :} $O(n \cdot \alpha(n)) \approx O(n)$ avec les optimisations.
 
-\subsection{Kruskal}
+\subsection{Algorithme de Kruskal}
 
-Adapte l'algorithme de l'arbre couvrant minimum :
+L'algorithme de Kruskal, traditionnellement utilisé pour l'arbre couvrant minimum, est adapté à la labellisation. L'image est modélisée comme un graphe où les arêtes connectent les pixels voisins.
+
 \begin{enumerate}
-    \item Construire la liste des arêtes (adjacences entre pixels objets)
+    \item Construire la liste de toutes les arêtes (adjacences entre pixels objets)
     \item Parcourir les arêtes et fusionner les composantes via Union-Find
 \end{enumerate}
 
 \textbf{Complexité :} $O(E \cdot \alpha(V))$ où $E$ est le nombre d'arêtes.
 
-\textbf{Inconvénient :} Création explicite de toutes les arêtes (coûteux en mémoire).
+\textbf{Inconvénient majeur :} Nécessité de créer explicitement toutes les arêtes, ce qui représente un surcoût significatif en mémoire et en temps.
 
-\subsection{Prim (BFS)}
+\subsection{Algorithme de Prim (BFS)}
 
-Parcours en largeur pour explorer chaque composante :
-\begin{enumerate}
-    \item Pour chaque pixel non labellisé
-    \item Lancer un BFS qui visite tous les pixels connectés
-    \item Affecter le même label à tous les pixels visités
-\end{enumerate}
+Cette approche utilise un parcours en largeur (BFS) pour explorer chaque composante connexe.
 
-\textbf{Complexité :} $O(n)$ en temps, $O(n)$ en espace pour la file.
+\begin{algorithm}[H]
+\caption{Prim/BFS Labeling}
+\begin{algorithmic}[1]
+\State $label \gets 0$
+\For{$(x, y) \in \Omega$}
+    \If{$I(x, y) = 1$ et $L(x, y) = 0$}
+        \State $label \gets label + 1$
+        \State $queue \gets \{(x, y)\}$
+        \While{$queue \neq \emptyset$}
+            \State $(cx, cy) \gets queue.\text{pop}()$
+            \State $L(cx, cy) \gets label$
+            \For{$n \in$ voisins adjacents non visités avec $I(n) = 1$}
+                \State $queue.\text{push}(n)$
+            \EndFor
+        \EndWhile
+    \EndIf
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Complexité :} $O(n)$ en temps, $O(n)$ en espace pour la file BFS.
 
 % ===========================================
 % ARCHITECTURE
@@ -246,7 +299,7 @@ Parcours en largeur pour explorer chaque composante :
 \newpage
 \section{Architecture du Projet}
 
-\subsection{Structure}
+\subsection{Structure des fichiers}
 
 \begin{table}[H]
 \centering
@@ -255,17 +308,35 @@ Parcours en largeur pour explorer chaque composante :
 \textbf{Module} & \textbf{Description} \\
 \midrule
 \texttt{src/core/image.py} & Classes Image, LabelImage, ColorImage \\
-\texttt{src/readers/image\_io.py} & Lecture/écriture d'images (PGM, PNG, etc.) \\
-\texttt{src/algorithms/two\_pass.py} & Algorithme Two-Pass \\
-\texttt{src/algorithms/union\_find.py} & Algorithme Union-Find \\
-\texttt{src/algorithms/kruskal.py} & Algorithme Kruskal \\
-\texttt{src/algorithms/prim.py} & Algorithme Prim (BFS) \\
-\texttt{src/utils/utils.py} & Utilitaires (Timer, statistiques) \\
-\texttt{benchmarks/} & Scripts de benchmark \\
+\texttt{src/readers/image\_io.py} & Lecture/écriture d'images (PGM, PNG, JPEG, etc.) \\
+\texttt{src/algorithms/two\_pass.py} & Algorithme Two-Pass avec table d'équivalence \\
+\texttt{src/algorithms/union\_find.py} & Algorithme Union-Find optimisé \\
+\texttt{src/algorithms/kruskal.py} & Algorithme Kruskal (modèle graphe) \\
+\texttt{src/algorithms/prim.py} & Algorithme Prim avec BFS \\
+\texttt{src/utils/utils.py} & Utilitaires (Timer, statistiques, voisinage) \\
+\texttt{benchmarks/} & Scripts de benchmark et génération de graphiques \\
 \bottomrule
 \end{tabular}
-\caption{Organisation des modules}
+\caption{Organisation des modules du projet}
 \end{table}
+
+\subsection{Classes principales}
+
+\subsubsection{Classe Image}
+Représente une image en niveaux de gris avec les méthodes essentielles :
+\begin{itemize}
+    \item \texttt{at(x, y)} : accès à un pixel
+    \item \texttt{set\_at(x, y, value)} : modification d'un pixel
+    \item \texttt{binarize(threshold)} : binarisation avec seuil
+\end{itemize}
+
+\subsubsection{Classe LabelImage}
+Stocke les étiquettes des composantes avec :
+\begin{itemize}
+    \item \texttt{count\_labels()} : compte le nombre de composantes
+    \item \texttt{to\_visualization()} : normalise pour visualisation PGM
+    \item \texttt{to\_color\_visualization()} : génère une image couleur avec LUT
+\end{itemize}
 
 \subsection{Interface commune}
 
@@ -281,12 +352,14 @@ def label(image: Image, connectivity: int) -> LabelImage
 \newpage
 \section{Protocole Expérimental}
 
-\subsection{Configuration}
+\subsection{Configuration des tests}
 
 \begin{itemize}
     \item \textbf{Langage :} Python 3.11
+    \item \textbf{Système :} Windows 10/11
     \item \textbf{Nombre de runs :} 5 par configuration
     \item \textbf{Connectivités :} 4 et 8
+    \item \textbf{Métriques :} temps moyen, écart-type, min, max
 \end{itemize}
 
 \subsection{Images de test}
@@ -295,7 +368,7 @@ def label(image: Image, connectivity: int) -> LabelImage
 \centering
 \begin{tabular}{lccc}
 \toprule
-\textbf{Image} & \textbf{Taille} & \textbf{Comp. (4-conn)} & \textbf{Comp. (8-conn)} \\
+\textbf{Image} & \textbf{Dimensions} & \textbf{Composantes (4-conn)} & \textbf{Composantes (8-conn)} \\
 \midrule
 images.png & petite & 5 & 4 \\
 figure-65.png & moyenne & 31 & 31 \\
@@ -311,13 +384,13 @@ text image.png & grande & 67 & 67 \\
 \newpage
 \section{Résultats Expérimentaux}
 
-\subsection{Comparaison globale}
+\subsection{Résultats globaux}
 
 \begin{table}[H]
 \centering
-\begin{tabular}{lccc}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Algorithme} & \textbf{Temps moyen (ms)} & \textbf{Écart-type} & \textbf{Speedup} \\
+\textbf{Algorithme} & \textbf{Temps moyen (ms)} & \textbf{Écart-type (ms)} & \textbf{Speedup} \\
 \midrule
 Two-Pass & 2437.70 & 21.88 & 1.00x \\
 Union-Find & 2568.11 & 13.17 & 0.95x \\
@@ -325,7 +398,45 @@ Prim & 3273.58 & 12.97 & 0.74x \\
 Kruskal & 4247.60 & 95.94 & 0.57x \\
 \bottomrule
 \end{tabular}
-\caption{Performances moyennes (toutes images et connectivités)}
+\caption{Comparaison globale des performances}
+\end{table}
+
+\subsection{Résultats par image}
+
+\subsubsection{Image figure-65.png (31 composantes)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Algorithme} & \multicolumn{2}{c}{\textbf{4-connexité}} & \multicolumn{2}{c}{\textbf{8-connexité}} \\
+ & Temps (ms) & $\sigma$ & Temps (ms) & $\sigma$ \\
+\midrule
+Two-Pass & 720.01 & 6.02 & 1029.55 & 7.76 \\
+Union-Find & 698.93 & 7.30 & 1121.50 & 5.08 \\
+Prim & 764.47 & 3.72 & 1475.94 & 8.89 \\
+Kruskal & 1083.27 & 19.50 & 1906.23 & 29.84 \\
+\bottomrule
+\end{tabular}
+\caption{Performances sur figure-65.png}
+\end{table}
+
+\subsubsection{Image text image.png (67 composantes)}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Algorithme} & \multicolumn{2}{c}{\textbf{4-connexité}} & \multicolumn{2}{c}{\textbf{8-connexité}} \\
+ & Temps (ms) & $\sigma$ & Temps (ms) & $\sigma$ \\
+\midrule
+Two-Pass & 5131.49 & 31.83 & 7452.78 & 30.98 \\
+Union-Find & 5060.18 & 34.50 & 8215.42 & 21.13 \\
+Prim & 5676.37 & 33.80 & 11342.60 & 25.83 \\
+Kruskal & 8094.03 & 177.73 & 13940.96 & 336.47 \\
+\bottomrule
+\end{tabular}
+\caption{Performances sur text image.png}
 \end{table}
 
 \subsection{Impact de la connectivité}
@@ -334,15 +445,15 @@ Kruskal & 4247.60 & 95.94 & 0.57x \\
 \centering
 \begin{tabular}{lccc}
 \toprule
-\textbf{Algorithme} & \textbf{4-conn (ms)} & \textbf{8-conn (ms)} & \textbf{Augmentation} \\
+\textbf{Algorithme} & \textbf{Temps 4-conn (ms)} & \textbf{Temps 8-conn (ms)} & \textbf{Augmentation} \\
 \midrule
-Two-Pass & 1990.30 & 2885.11 & +45\% \\
-Union-Find & 1959.25 & 3176.98 & +62\% \\
-Prim & 2190.39 & 4356.78 & +99\% \\
-Kruskal & 3113.33 & 5381.87 & +73\% \\
+Two-Pass & 1990.30 & 2885.11 & +44.96\% \\
+Union-Find & 1959.25 & 3176.98 & +62.15\% \\
+Prim & 2190.39 & 4356.78 & +98.91\% \\
+Kruskal & 3113.33 & 5381.87 & +72.87\% \\
 \bottomrule
 \end{tabular}
-\caption{Impact de la connectivité}
+\caption{Impact de la connectivité sur les performances}
 \end{table}
 
 \subsection{Validation de la complexité}
@@ -352,6 +463,7 @@ Kruskal & 3113.33 & 5381.87 & +73\% \\
 \begin{tabular}{lcccc}
 \toprule
 \textbf{Algorithme} & \textbf{64×64} & \textbf{128×128} & \textbf{256×256} & \textbf{512×512} \\
+ & (4K px) & (16K px) & (65K px) & (262K px) \\
 \midrule
 Two-Pass & 4.80 ms & 20.95 ms & 76.22 ms & 315.44 ms \\
 Union-Find & 4.44 ms & 18.05 ms & 73.82 ms & 305.74 ms \\
@@ -359,10 +471,10 @@ Kruskal & 5.44 ms & 20.34 ms & 92.05 ms & 377.61 ms \\
 Prim & 3.77 ms & 14.31 ms & 58.31 ms & 248.27 ms \\
 \bottomrule
 \end{tabular}
-\caption{Temps d'exécution selon la taille (facteur ×4 entre colonnes)}
+\caption{Temps d'exécution en fonction de la taille}
 \end{table}
 
-Les résultats confirment une complexité linéaire $O(N)$ : le temps quadruple quand la taille quadruple.
+Les résultats confirment une complexité linéaire $O(N)$ : lorsque le nombre de pixels quadruple, le temps d'exécution quadruple également.
 
 % ===========================================
 % DISCUSSION
@@ -370,35 +482,70 @@ Les résultats confirment une complexité linéaire $O(N)$ : le temps quadruple 
 \newpage
 \section{Discussion}
 
-\subsection{Analyse des algorithmes}
+\subsection{Analyse critique des algorithmes}
 
-\begin{table}[H]
-\centering
-\begin{tabular}{lll}
-\toprule
-\textbf{Algorithme} & \textbf{Forces} & \textbf{Faiblesses} \\
-\midrule
-Two-Pass & Localité cache, simplicité & Deux passes requises \\
-Union-Find & Élégance théorique & Accès mémoire dispersés \\
-Kruskal & Modèle graphe explicite & Coût création arêtes \\
-Prim (BFS) & Approche intuitive & Gestion file BFS \\
-\bottomrule
-\end{tabular}
-\caption{Comparaison qualitative}
-\end{table}
+\subsubsection{Two-Pass}
+\textbf{Forces :}
+\begin{itemize}
+    \item Excellente localité de cache grâce au parcours raster séquentiel
+    \item Simple à implémenter et à comprendre
+    \item Très efficace sur les architectures modernes
+\end{itemize}
+\textbf{Faiblesses :}
+\begin{itemize}
+    \item Nécessite deux passes complètes de l'image
+    \item Gestion de la table d'équivalence délicate
+\end{itemize}
+
+\subsubsection{Union-Find}
+\textbf{Forces :}
+\begin{itemize}
+    \item Basé sur le modèle de partition, conceptuellement élégant
+    \item Structure réutilisable pour d'autres problèmes
+    \item Complexité quasi-optimale avec les optimisations
+\end{itemize}
+\textbf{Faiblesses :}
+\begin{itemize}
+    \item Accès mémoire non-séquentiels lors des opérations Find
+    \item Surcoût mémoire pour les tableaux parent et rank
+\end{itemize}
+
+\subsubsection{Kruskal}
+\textbf{Forces :}
+\begin{itemize}
+    \item Illustre la modélisation par graphe (Arbre Couvrant Minimum)
+    \item Facile à comprendre pour qui connaît la théorie des graphes
+\end{itemize}
+\textbf{Faiblesses :}
+\begin{itemize}
+    \item Création explicite de toutes les arêtes : très coûteux
+    \item Non adapté aux grandes images (mémoire insuffisante)
+\end{itemize}
+
+\subsubsection{Prim (BFS)}
+\textbf{Forces :}
+\begin{itemize}
+    \item Approche intuitive par exploration de voisinage
+    \item Une seule passe principale
+\end{itemize}
+\textbf{Faiblesses :}
+\begin{itemize}
+    \item Surcoût de gestion de la file BFS
+    \item Allocations mémoire dynamiques fréquentes
+\end{itemize}
 
 \subsection{Impact de la connectivité}
 
-Le passage de 4-conn à 8-conn entraîne une augmentation de 45\% à 99\% du temps d'exécution :
+Le passage de 4-conn à 8-conn entraîne une augmentation de 45\% à 99\% du temps :
 \begin{itemize}
-    \item Plus de voisins à examiner (8 vs 4)
-    \item Plus d'opérations Union/Find
-    \item Pour Kruskal : nombre d'arêtes doublé
+    \item Nombre supérieur de voisins à examiner (8 au lieu de 4)
+    \item Plus d'opérations Union/Find pour fusionner les composantes
+    \item Pour Kruskal, nombre d'arêtes environ doublé
 \end{itemize}
 
-\subsection{Validité}
+\subsection{Vérification de cohérence}
 
-Tous les algorithmes trouvent le même nombre de composantes, validant la correction des implémentations. Les faibles écarts-types (<5\%) confirment la reproductibilité.
+Tous les algorithmes trouvent le même nombre de composantes pour chaque image, validant la correction des implémentations. Les faibles écarts-types (<5\%) confirment la reproductibilité des mesures.
 
 % ===========================================
 % CONCLUSION
@@ -408,26 +555,29 @@ Tous les algorithmes trouvent le même nombre de composantes, validant la correc
 
 \subsection{Synthèse}
 
+Ce projet a permis d'implémenter et de comparer quatre algorithmes de labellisation :
+
 \begin{enumerate}
     \item \textbf{Two-Pass} : Le plus performant, excellente localité de cache
-    \item \textbf{Union-Find} : Performances proches, implémentation élégante
-    \item \textbf{Prim (BFS)} : Performances intermédiaires
-    \item \textbf{Kruskal} : Pénalisé par la création des arêtes
+    \item \textbf{Union-Find} : Performances très proches, implémentation élégante
+    \item \textbf{Prim (BFS)} : Performances intermédiaires, approche intuitive
+    \item \textbf{Kruskal} : Le moins performant, pénalisé par la création des arêtes
 \end{enumerate}
 
-\subsection{Recommandations}
+\subsection{Recommandations pratiques}
 
 \begin{itemize}
-    \item Two-Pass pour les performances optimales
-    \item Union-Find pour la flexibilité
-    \item Préférer la 4-connexité sauf besoin explicite
+    \item \textbf{Two-Pass} pour des performances optimales sur grandes images
+    \item \textbf{Union-Find} pour sa flexibilité et son élégance conceptuelle
+    \item \textbf{Connectivité 4} sauf si l'application nécessite explicitement la 8-connexité
 \end{itemize}
 
 \subsection{Perspectives}
 
 \begin{itemize}
-    \item Parallélisation multi-cœurs
-    \item Extension aux images 3D
+    \item Parallélisation pour processeurs multi-cœurs
+    \item Optimisation mémoire pour très grandes images
+    \item Extension aux images 3D ou multi-spectrales
     \item Algorithmes récents (block-based, run-based)
 \end{itemize}
 
@@ -442,28 +592,31 @@ Tous les algorithmes trouvent le même nombre de composantes, validant la correc
 \centering
 \begin{tabular}{lccc}
 \toprule
-\textbf{Tâche} & \textbf{R.D.} & \textbf{N.M.} & \textbf{A.B.} \\
+\textbf{Tâche} & \textbf{R. Despoullain} & \textbf{N. Marano} & \textbf{A. Braham} \\
 \midrule
-\textit{Algorithmes} & & & \\
+\multicolumn{4}{l}{\textit{Implémentation des algorithmes}} \\
 \quad Two-Pass & $\bullet$ & & $\bullet$ \\
 \quad Union-Find & $\bullet$ & $\bullet$ & \\
 \quad Kruskal & & $\bullet$ & $\bullet$ \\
-\quad Prim & & $\bullet$ & $\bullet$ \\
+\quad Prim (BFS) & & $\bullet$ & $\bullet$ \\
 \midrule
-\textit{Infrastructure} & & & \\
-\quad Architecture & $\bullet$ & & $\bullet$ \\
-\quad Classes Image & $\bullet$ & $\bullet$ & \\
-\quad I/O images & & $\bullet$ & $\bullet$ \\
+\multicolumn{4}{l}{\textit{Infrastructure et outils}} \\
+\quad Architecture du projet & $\bullet$ & & $\bullet$ \\
+\quad Classes Image/LabelImage & $\bullet$ & $\bullet$ & \\
+\quad Lecture/écriture images & & $\bullet$ & $\bullet$ \\
+\quad Visualisation couleur (LUT) & & $\bullet$ & \\
 \midrule
-\textit{Benchmarks} & & & \\
-\quad Protocole & $\bullet$ & $\bullet$ & \\
-\quad Scripts & & $\bullet$ & $\bullet$ \\
-\quad Analyse & $\bullet$ & & $\bullet$ \\
+\multicolumn{4}{l}{\textit{Benchmarks et analyse}} \\
+\quad Protocole expérimental & $\bullet$ & $\bullet$ & \\
+\quad Scripts de benchmark & & $\bullet$ & $\bullet$ \\
+\quad Génération des graphiques & $\bullet$ & $\bullet$ & \\
+\quad Analyse de complexité & $\bullet$ & & $\bullet$ \\
 \midrule
-\textit{Rapport} & & & \\
-\quad Théorie & $\bullet$ & & $\bullet$ \\
-\quad Algorithmes & $\bullet$ & $\bullet$ & \\
-\quad Résultats & & $\bullet$ & $\bullet$ \\
+\multicolumn{4}{l}{\textit{Rapport et documentation}} \\
+\quad Sections théoriques & $\bullet$ & & $\bullet$ \\
+\quad Description des algorithmes & $\bullet$ & $\bullet$ & \\
+\quad Résultats et discussion & & $\bullet$ & $\bullet$ \\
+\quad Rédaction LaTeX & $\bullet$ & & $\bullet$ \\
 \bottomrule
 \end{tabular}
 \caption*{$\bullet$ = contribution principale}
@@ -494,11 +647,11 @@ R.E. Tarjan,
 \bibitem{wu2009}
 K. Wu, E. Otoo, et K. Suzuki,
 ``Optimizing two-pass connected-component labeling algorithms,''
-\textit{Pattern Analysis and Applications}, vol. 12, no. 2, 2009.
+\textit{Pattern Analysis and Applications}, vol. 12, no. 2, pp. 117-135, 2009.
 
 \bibitem{he2017}
-L. He et al.,
-``The connected-component labeling problem: A review,''
+L. He, X. Ren, Q. Gao, et al.,
+``The connected-component labeling problem: A review of state-of-the-art algorithms,''
 \textit{Pattern Recognition}, vol. 70, pp. 25-43, 2017.
 
 \end{thebibliography}
