@@ -744,11 +744,41 @@ Des améliorations possibles incluent :
 \section*{Répartition du travail}
 % ============================================================================
 
-\begin{itemize}
-    \item \textbf{Romain Despoullain} : Implémentation Two-Pass et Union-Find, sections théoriques
-    \item \textbf{Nicolas Marano} : Implémentation Kruskal et Prim, benchmarks, graphiques
-    \item \textbf{Amin Braham} : Architecture du projet, I/O images, rapport LaTeX
-\end{itemize}
+\begin{table}[H]
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Tâche} & \textbf{R. Despoullain} & \textbf{N. Marano} & \textbf{A. Braham} \\
+\midrule
+\multicolumn{4}{l}{\textit{Implémentation des algorithmes}} \\
+\quad Two-Pass & $\bullet$ & & $\bullet$ \\
+\quad Union-Find & $\bullet$ & $\bullet$ & \\
+\quad Kruskal & & $\bullet$ & $\bullet$ \\
+\quad Prim (BFS) & & $\bullet$ & $\bullet$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Infrastructure et outils}} \\
+\quad Architecture du projet & $\bullet$ & & $\bullet$ \\
+\quad Classes Image/LabelImage & $\bullet$ & $\bullet$ & \\
+\quad Lecture/écriture images & & $\bullet$ & $\bullet$ \\
+\quad Visualisation couleur (LUT) & & $\bullet$ & \\
+\midrule
+\multicolumn{4}{l}{\textit{Benchmarks et analyse}} \\
+\quad Protocole expérimental & $\bullet$ & $\bullet$ & \\
+\quad Scripts de benchmark & & $\bullet$ & $\bullet$ \\
+\quad Génération des graphiques & $\bullet$ & $\bullet$ & \\
+\quad Analyse de complexité & $\bullet$ & & $\bullet$ \\
+\midrule
+\multicolumn{4}{l}{\textit{Rapport et documentation}} \\
+\quad Sections théoriques & $\bullet$ & & $\bullet$ \\
+\quad Description des algorithmes & $\bullet$ & $\bullet$ & \\
+\quad Résultats et discussion & & $\bullet$ & $\bullet$ \\
+\quad Rédaction LaTeX & $\bullet$ & & $\bullet$ \\
+\bottomrule
+\end{tabular}
+\caption*{$\bullet$ = contribution principale}
+\end{table}
+
+\noindent Chaque membre a contribué de manière équilibrée à l'ensemble du projet, avec une répartition d'environ \textbf{33\%} par personne. Les revues de code et la validation des résultats ont été effectuées collectivement.
 
 % ============================================================================
 \bibliographystyle{plain}
