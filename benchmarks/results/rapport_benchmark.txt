@@ -1,0 +1,81 @@
+======================================================================
+  RAPPORT DE BENCHMARK - LABELLISATION DES COMPOSANTES CONNEXES
+======================================================================
+
+Date: 2025-11-24 11:54:54
+Nombre de runs: 5
+
+----------------------------------------------------------------------
+  RESUME PAR ALGORITHME
+----------------------------------------------------------------------
+
+Algorithme       Temps moyen    Speedup
+----------------------------------------
+two_pass           2437.70 ms      1.00x
+union_find         2568.11 ms      0.95x
+prim               3273.58 ms      0.74x
+kruskal            4247.60 ms      0.57x
+
+----------------------------------------------------------------------
+  DETAILS PAR IMAGE
+----------------------------------------------------------------------
+
+
+  Image: figure-65.png
+  --------------------------------------------------
+
+    Connectivite 4:
+      union_find  :   698.93 ms (+/-   7.30) | 31 composantes
+      two_pass    :   720.01 ms (+/-   6.02) | 31 composantes
+      prim        :   764.47 ms (+/-   3.72) | 31 composantes
+      kruskal     :  1083.27 ms (+/-  19.50) | 31 composantes
+
+    Connectivite 8:
+      two_pass    :  1029.55 ms (+/-   7.76) | 31 composantes
+      union_find  :  1121.50 ms (+/-   5.08) | 31 composantes
+      prim        :  1475.94 ms (+/-   8.89) | 31 composantes
+      kruskal     :  1906.23 ms (+/-  29.84) | 31 composantes
+
+  Image: images.png
+  --------------------------------------------------
+
+    Connectivite 4:
+      union_find  :   118.62 ms (+/-   2.71) | 5 composantes
+      two_pass    :   119.41 ms (+/-   0.69) | 5 composantes
+      prim        :   130.32 ms (+/-   1.77) | 5 composantes
+      kruskal     :   162.69 ms (+/-   4.09) | 5 composantes
+
+    Connectivite 8:
+      two_pass    :   172.99 ms (+/-   0.58) | 4 composantes
+      union_find  :   194.01 ms (+/-   9.33) | 4 composantes
+      prim        :   251.80 ms (+/-   3.78) | 4 composantes
+      kruskal     :   298.43 ms (+/-   8.18) | 4 composantes
+
+  Image: text image.png
+  --------------------------------------------------
+
+    Connectivite 4:
+      union_find  :  5060.18 ms (+/-  34.50) | 67 composantes
+      two_pass    :  5131.49 ms (+/-  31.83) | 67 composantes
+      prim        :  5676.37 ms (+/-  33.80) | 67 composantes
+      kruskal     :  8094.03 ms (+/- 177.73) | 67 composantes
+
+    Connectivite 8:
+      two_pass    :  7452.78 ms (+/-  30.98) | 67 composantes
+      union_find  :  8215.42 ms (+/-  21.13) | 67 composantes
+      prim        : 11342.60 ms (+/-  25.83) | 67 composantes
+      kruskal     : 13940.96 ms (+/- 336.47) | 67 composantes
+
+----------------------------------------------------------------------
+  VERIFICATION DE COHERENCE
+----------------------------------------------------------------------
+
+  [OK] figure-65.png: 31 composantes
+  [OK] images.png: 5 composantes
+  [OK] text image.png: 67 composantes
+
+  Tous les algorithmes trouvent le meme nombre de composantes.
+
+======================================================================
+  FIN DU RAPPORT
+======================================================================

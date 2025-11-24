@@ -1,197 +1,200 @@
 # Guide d'utilisation - Labellisation
 
-## Compilation
+## Installation
 
-### Prérequis
-- CMake (version 3.10 minimum)
-- Compilateur C++17 (g++, clang++, MSVC)
+### Prerequis
+- Python 3.7 ou superieur
+- NumPy
+- OpenCV (pour les formats JPEG, PNG, BMP, etc.)
 
-### Étapes de compilation
+### Installation des dependances
 
 ```bash
-# 1. Créer un dossier de build
-mkdir build
-cd build
-
-# 2. Configurer avec CMake
-cmake ..
-
-# 3. Compiler
-cmake --build .
-# Ou sur Unix/Linux/Mac :
-make
-
-# 4. (Optionnel) Mode Release pour optimisation maximale
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make
+pip install numpy opencv-python
 ```
-
-Les exécutables seront créés dans le dossier `build/`.
 
 ## Utilisation
 
 ### Programme principal
 
 ```bash
-./labellisation <input> <output> <algorithm> <connectivity>
+python src/main.py <input> <output> <algorithm> <connectivity>
 ```
 
 **Arguments :**
-- `input` : Chemin de l'image d'entrée (PGM ou PPM)
-- `output` : Chemin de l'image de sortie (PGM)
+- `input` : Chemin de l'image d'entree (JPEG, PNG, BMP, TIFF, GIF, WEBP, PGM, PPM)
+- `output` : Chemin de l'image de sortie (PNG, JPEG, BMP, PGM, etc.)
 - `algorithm` : `two_pass` | `union_find` | `kruskal` | `prim`
 - `connectivity` : `4` | `8`
+
+**Formats supportes :** JPEG, PNG, BMP, TIFF, GIF, WEBP, PGM, PPM
 
 **Exemples :**
 
 ```bash
-# Labellisation avec Two-Pass en 4-connexité
-./labellisation ../images/input/test.pgm ../images/output/result.pgm two_pass 4
+# Labellisation d'une image JPEG avec Two-Pass
+python src/main.py photo.jpg result.png two_pass 4
 
-# Labellisation avec Union-Find en 8-connexité
-./labellisation ../images/input/test.pgm ../images/output/result.pgm union_find 8
+# Labellisation d'une image PNG avec Union-Find
+python src/main.py image.png output.pgm union_find 8
 
-# Labellisation avec Kruskal
-./labellisation ../images/input/test.pgm ../images/output/result.pgm kruskal 4
+# Labellisation d'une image BMP avec Kruskal
+python src/main.py picture.bmp result.png kruskal 4
 
 # Labellisation avec Prim
-./labellisation ../images/input/test.pgm ../images/output/result.pgm prim 4
-```
-
-### Tests unitaires
-
-```bash
-# Exécuter tous les tests
-./test_algorithms
-
-# Les tests vérifient :
-# - Cohérence entre les 4 algorithmes
-# - Cas limites (image vide, pixel unique)
-# - Différence 4-conn vs 8-conn
+python src/main.py input.tiff output.png prim 8
 ```
 
 ### Benchmark
 
 ```bash
 # Comparer les performances sur une ou plusieurs images
-./benchmark ../images/input/image1.pgm ../images/input/image2.pgm
+python benchmarks/benchmark.py images/input/image1.pgm images/input/image2.pgm
 
 # Le benchmark affiche :
-# - Temps moyen d'exécution (sur 10 runs)
-# - Écart-type
+# - Temps moyen d'execution (sur 10 runs)
+# - Ecart-type
 # - Speedup relatif
-# - Nombre de composantes trouvées
+# - Nombre de composantes trouvees
 ```
 
-## Préparation des images
+## Formats d'images supportes
 
-### Format PGM (recommandé)
+Le projet supporte de nombreux formats d'images grace a OpenCV :
 
-Le projet utilise le format PGM (Portable GrayMap) qui est :
-- Simple (pas de compression)
-- Lisible en texte (format P2) ou binaire (format P5)
-- Supporté par de nombreux outils
+| Format | Extension | Lecture | Ecriture |
+|--------|-----------|---------|----------|
+| JPEG   | .jpg, .jpeg | Oui | Oui |
+| PNG    | .png | Oui | Oui |
+| BMP    | .bmp | Oui | Oui |
+| TIFF   | .tiff, .tif | Oui | Oui |
+| GIF    | .gif | Oui | Non |
+| WEBP   | .webp | Oui | Non |
+| PGM    | .pgm | Oui | Oui |
+| PPM    | .ppm | Oui | Oui |
 
-### Créer une image PGM de test
+**Note :** Les images couleur sont automatiquement converties en niveaux de gris.
 
-Vous pouvez créer une image PGM simple avec n'importe quel éditeur de texte :
+## Visualiser les resultats
 
-```pgm
-P2
-# Test image
-5 5
-255
-0 0 0 0 0
-0 255 255 0 0
-0 255 255 0 0
-0 0 0 255 0
-0 0 0 0 0
-```
+Les images labellisees peuvent etre sauvegardees dans differents formats (PNG, JPEG, PGM, etc.).
+Chaque composante connexe est representee par un niveau de gris different.
 
-Enregistrez ce fichier sous `test.pgm`.
-
-### Convertir d'autres formats en PGM
-
-Si vous avez des images PNG/JPG, utilisez ImageMagick ou GIMP :
-
-```bash
-# Avec ImageMagick
-convert input.png -colorspace Gray output.pgm
-
-# Ou avec GIMP
-# File → Export As → Sélectionner PGM
-```
-
-## Visualiser les résultats
-
-Les images labellisées sont sauvegardées en PGM avec des niveaux de gris.
-Vous pouvez les visualiser avec :
-
-- **ImageMagick** : `display output.pgm`
-- **GIMP** : Ouvrir directement le fichier PGM
+Vous pouvez visualiser les resultats avec :
+- N'importe quel visualiseur d'images (si format PNG/JPEG)
+- **GIMP** : Ouvrir directement le fichier
 - **VSCode** : Extensions d'affichage d'images
-- Convertir en PNG : `convert output.pgm output.png`
 
 ## Compilation du rapport LaTeX
 
 ```bash
 cd docs/rapport
 pdflatex rapport.tex
-pdflatex rapport.tex  # Deux fois pour les références
+pdflatex rapport.tex  # Deux fois pour les references
 
 cd ../presentation
 pdflatex presentation.tex
 pdflatex presentation.tex
 ```
 
-## Problèmes courants
+## Problemes courants
 
-### Erreur de compilation C++17
+### Module non trouve (ModuleNotFoundError)
 
-Si vous obtenez des erreurs liées à C++17 :
+Si vous obtenez une erreur "No module named...":
 ```bash
-# Vérifier la version de votre compilateur
-g++ --version
+# Verifier que vous etes dans le bon repertoire
+cd labellisation
 
-# Forcer C++17
-cmake -DCMAKE_CXX_STANDARD=17 ..
+# Executer depuis la racine du projet
+python src/main.py ...
 ```
 
-### Image non trouvée
+### Image non trouvee
 
-Vérifiez que le chemin est correct. Utilisez des chemins relatifs ou absolus :
+Verifiez que le chemin est correct. Utilisez des chemins relatifs ou absolus :
 ```bash
-# Chemin relatif depuis build/
-./labellisation ../images/input/test.pgm ../images/output/result.pgm two_pass 4
+# Chemin relatif depuis la racine du projet
+python src/main.py images/input/test.pgm images/output/result.pgm two_pass 4
 
 # Chemin absolu
-./labellisation /chemin/complet/vers/input.pgm /chemin/vers/output.pgm two_pass 4
+python src/main.py /chemin/complet/vers/input.pgm /chemin/vers/output.pgm two_pass 4
 ```
 
-### Erreur "Format non supporté"
+### Erreur "Format non supporte"
 
-Le projet ne supporte que PGM et PPM. Convertissez vos images :
+Verifiez que OpenCV est installe :
 ```bash
-convert input.jpg -colorspace Gray output.pgm
+pip install opencv-python
 ```
+
+Si le probleme persiste, essayez de convertir l'image en PNG ou JPEG.
 
 ## Structure des fichiers
 
 ```
 labellisation/
-├── src/                    # Code source
+├── src/                    # Code source Python
+│   ├── __init__.py        # Package principal
 │   ├── core/              # Classes de base (Image, LabelImage)
-│   ├── io/                # Lecture/écriture PGM/PPM
+│   │   ├── __init__.py
+│   │   └── image.py
+│   ├── io/                # Lecture/ecriture PGM/PPM
+│   │   ├── __init__.py
+│   │   └── image_io.py
 │   ├── algorithms/        # Les 4 algorithmes
+│   │   ├── __init__.py
+│   │   ├── two_pass.py
+│   │   ├── union_find.py
+│   │   ├── kruskal.py
+│   │   └── prim.py
 │   ├── utils/             # Fonctions utilitaires
-│   └── main.cpp          # Programme principal
-├── tests/                 # Tests unitaires
-├── benchmarks/           # Benchmarks de performance
-├── images/               # Images d'entrée/sortie
-├── docs/                 # Documentation LaTeX
-├── build/                # Fichiers de compilation (créé par CMake)
-├── CMakeLists.txt        # Configuration CMake
-└── README.md             # Documentation principale
+│   │   ├── __init__.py
+│   │   └── utils.py
+│   └── main.py            # Programme principal
+├── benchmarks/            # Benchmarks de performance
+│   └── benchmark.py
+├── images/                # Images d'entree/sortie
+├── docs/                  # Documentation LaTeX
+└── README.md              # Documentation principale
+```
+
+## API Python
+
+### Utilisation en tant que module
+
+Vous pouvez aussi utiliser le code comme une bibliotheque Python :
+
+```python
+from src.core.image import Image, LabelImage
+from src.io.image_io import ImageIO
+from src.algorithms.two_pass import TwoPass
+from src.algorithms.union_find import UnionFind
+from src.algorithms.kruskal import Kruskal
+from src.algorithms.prim import Prim
+
+# Charger une image (JPEG, PNG, BMP, PGM, etc.)
+image = ImageIO.read_image("photo.jpg")
+
+# Binariser
+image.binarize(128)
+
+# Labelliser avec l'algorithme de votre choix
+labels = TwoPass.label(image, connectivity=4)
+# ou
+labels = UnionFind.label(image, connectivity=8)
+# ou
+labels = Kruskal.label(image, connectivity=4)
+# ou
+labels = Prim.label(image, connectivity=8)
+
+# Obtenir le nombre de composantes
+num_components = labels.count_labels()
+print(f"Composantes trouvees: {num_components}")
+
+# Sauvegarder le resultat (PNG, JPEG, PGM, etc.)
+output_image = labels.to_visualization()
+ImageIO.write_image("output.png", output_image)
 ```
 
 ## Aide

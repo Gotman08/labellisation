@@ -17,7 +17,15 @@
       "Bash(do echo \"=== Test $algo ===\")",
       "Bash(done)",
       "Bash(./benchmark.exe:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(dir:*)",
+      "Bash(python src/main.py:*)",
+      "Bash(pip install:*)",
+      "Bash(python benchmarks/run_all.py:*)",
+      "Bash(python benchmarks/generate_report_pdf.py:*)",
+      "Bash(python -c:*)",
+      "Bash(python:*)",
+      "Bash(pdflatex:*)"
     ],
     "deny": [],
     "ask": []
