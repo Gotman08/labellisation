@@ -18,12 +18,15 @@ from typing import List, Optional
 class Pixel:
     """
     Structure représentant un pixel avec ses coordonnées.
-
     Utilisée pour la manipulation des pixels dans les algorithmes
     de labellisation (notamment pour Union-Find, Kruskal et Prim).
+
+    Attributs:
+        x: Coordonnée en ligne
+        y: Coordonnée en colonne
     """
-    x: int = 0  # Coordonnée en ligne
-    y: int = 0  # Coordonnée en colonne
+    x: int = 0
+    y: int = 0
 
     def __eq__(self, other: 'Pixel') -> bool:
         return self.x == other.x and self.y == other.y
@@ -55,7 +58,6 @@ class Image:
         self._height = height
         self._max_value = max_value
 
-        # Créer une liste 2D initialisée à 0
         if width > 0 and height > 0:
             self._data = [[0 for _ in range(width)] for _ in range(height)]
         else:
@@ -123,7 +125,6 @@ class Image:
         """
         if not self.is_valid(x, y):
             raise IndexError("Coordonnées hors limites")
-        # S'assurer que la valeur est dans [0, 255]
         if value < 0:
             value = 0
         elif value > 255:
@@ -145,7 +146,7 @@ class Image:
 
     def fill(self, value: int):
         """
-        Remplit l'image avec une valeur (implémentation manuelle).
+        Remplit l'image avec une valeur.
 
         Args:
             value: Valeur à affecter à tous les pixels
@@ -156,7 +157,7 @@ class Image:
 
     def copy_from(self, other: 'Image'):
         """
-        Copie les données d'une autre image (implémentation manuelle).
+        Copie les données d'une autre image.
 
         Args:
             other: Image source
@@ -164,16 +165,13 @@ class Image:
         self._width = other._width
         self._height = other._height
         self._max_value = other._max_value
-        # Copie manuelle profonde
         self._data = [[other._data[x][y] for y in range(other._width)]
                       for x in range(other._height)]
 
     def binarize(self, threshold: int):
         """
-        Binarise l'image avec un seuil (implémentation manuelle).
-
-        Les pixels >= threshold deviennent 255 (blanc)
-        Les pixels < threshold deviennent 0 (noir)
+        Binarise l'image avec un seuil.
+        Les pixels >= threshold deviennent 255, les autres 0.
 
         Args:
             threshold: Seuil de binarisation
@@ -187,13 +185,12 @@ class Image:
 
     def copy(self) -> 'Image':
         """
-        Crée une copie de l'image (implémentation manuelle).
+        Crée une copie de l'image.
 
         Returns:
             Nouvelle instance Image avec les mêmes données
         """
         new_image = Image(self._width, self._height, self._max_value)
-        # Copie manuelle profonde
         for x in range(self._height):
             for y in range(self._width):
                 new_image._data[x][y] = self._data[x][y]
@@ -219,7 +216,6 @@ class LabelImage:
         self._width = width
         self._height = height
 
-        # Créer une liste 2D initialisée à 0
         if width > 0 and height > 0:
             self._labels = [[0 for _ in range(width)] for _ in range(height)]
         else:
@@ -299,7 +295,7 @@ class LabelImage:
 
     def fill(self, value: int):
         """
-        Remplit l'image avec une valeur (implémentation manuelle).
+        Remplit l'image avec une valeur.
 
         Args:
             value: Valeur à affecter à tous les labels
@@ -310,12 +306,11 @@ class LabelImage:
 
     def count_labels(self) -> int:
         """
-        Compte le nombre de labels distincts (hors 0) - implémentation manuelle.
+        Compte le nombre de labels distincts (hors 0).
 
         Returns:
             Nombre de composantes connexes
         """
-        # Utiliser un set pour trouver les labels uniques
         seen = set()
         for x in range(self._height):
             for y in range(self._width):
@@ -326,17 +321,14 @@ class LabelImage:
 
     def to_visualization(self) -> Image:
         """
-        Normalise les labels pour la visualisation (implémentation manuelle).
-
-        Remappe les labels sur [0, 255] pour pouvoir sauvegarder
-        l'image labellisée au format PGM.
+        Normalise les labels pour la visualisation.
+        Remappe les labels sur [0, 255] pour sauvegarder au format PGM.
 
         Returns:
             Image 8-bit avec labels normalisés
         """
         result = Image(self._width, self._height)
 
-        # Trouver le label maximum (implémentation manuelle)
         max_label = 0
         for x in range(self._height):
             for y in range(self._width):
@@ -344,18 +336,15 @@ class LabelImage:
                     max_label = self._labels[x][y]
 
         if max_label == 0:
-            # Pas de labels, retourner une image noire
             result.fill(0)
             return result
 
-        # Normaliser les labels (implémentation manuelle)
         for x in range(self._height):
             for y in range(self._width):
                 label = self._labels[x][y]
                 if label == 0:
                     result.set_at(x, y, 0)
                 else:
-                    # Mapper le label sur [1, 255]
                     value = ((label * 254) // max_label) + 1
                     result.set_at(x, y, value)
 
@@ -363,17 +352,17 @@ class LabelImage:
 
     def to_color_visualization(self) -> 'ColorImage':
         """
-        Génère une visualisation couleur avec LUT aléatoire (implémentation manuelle).
+        Génère une visualisation couleur avec LUT pseudo-aléatoire.
+        Chaque composante connexe reçoit une couleur distincte et vive.
 
-        Chaque composante connexe reçoit une couleur distincte et vive,
-        permettant une meilleure visualisation que les niveaux de gris.
+        La génération utilise des nombres premiers pour une bonne distribution
+        des couleurs, avec une valeur minimale de 55 pour éviter le noir.
 
         Returns:
             ColorImage avec couleurs distinctes pour chaque label
         """
         result = ColorImage(self._width, self._height)
 
-        # Trouver tous les labels uniques
         unique_labels = set()
         for x in range(self._height):
             for y in range(self._width):
@@ -383,17 +372,12 @@ class LabelImage:
         if not unique_labels:
             return result
 
-        # Générer une LUT de couleurs pseudo-aléatoires (mais déterministes)
-        # Utilise une fonction de hachage simple pour des couleurs distinctes
         color_lut = {}
         for label in unique_labels:
-            # Génération pseudo-aléatoire basée sur le label
-            # Utilise des nombres premiers pour une bonne distribution
-            r = ((label * 67) % 200) + 55    # 55-254 (évite le noir)
+            r = ((label * 67) % 200) + 55
             g = ((label * 97) % 200) + 55
             b = ((label * 131) % 200) + 55
 
-            # Assurer une couleur vive en forçant au moins une composante
             max_val = max(r, g, b)
             if max_val < 150:
                 if r == max_val:
@@ -405,12 +389,11 @@ class LabelImage:
 
             color_lut[label] = (r, g, b)
 
-        # Appliquer les couleurs
         for x in range(self._height):
             for y in range(self._width):
                 label = self._labels[x][y]
                 if label == 0:
-                    result.set_at(x, y, (0, 0, 0))  # Fond noir
+                    result.set_at(x, y, (0, 0, 0))
                 else:
                     result.set_at(x, y, color_lut[label])
 

@@ -40,20 +40,21 @@ import os
 from typing import List, Tuple
 from dataclasses import dataclass
 
-# Ajouter le répertoire parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.image import Image, LabelImage
 
 
 @dataclass
 class Edge:
-    """Structure représentant une arête du graphe."""
-    u: int      # Premier sommet (index linéaire du pixel)
-    v: int      # Deuxième sommet (index linéaire du pixel)
-    weight: int = 1  # Poids de l'arête (toujours 1 pour la labellisation)
+    """
+    Structure représentant une arête du graphe.
+    u et v sont les index linéaires des pixels, weight est toujours 1.
+    """
+    u: int
+    v: int
+    weight: int = 1
 
     def __lt__(self, other: 'Edge') -> bool:
-        """Opérateur de comparaison pour le tri."""
         return self.weight < other.weight
 
 
@@ -143,49 +144,34 @@ class Kruskal:
         height = input_image.height
         size = width * height
 
-        # Créer l'image de labels
         labels = LabelImage(width, height)
         labels.fill(0)
 
-        # ====================================================================
-        # Étape 1 : Construire les arêtes du graphe
-        # ====================================================================
-
+        """
+        Étape 1-2 : Construction et tri des arêtes
+        Note: toutes les arêtes ont poids=1, le tri est symbolique
+        mais fidèle à l'algorithme de Kruskal classique.
+        """
         edges = Kruskal._build_edges(input_image, connectivity)
-
-        # ====================================================================
-        # Étape 2 : Trier les arêtes par poids (caractéristique de Kruskal)
-        # ====================================================================
-
-        # Dans le cas de la labellisation, toutes les arêtes ont le même poids.
-        # Le tri ne change donc pas l'ordre relatif, mais on le fait quand même
-        # pour rester fidèle à l'algorithme de Kruskal classique.
         edges.sort()
 
-        # ====================================================================
-        # Étape 3 : Algorithme de Kruskal avec Union-Find
-        # ====================================================================
-
-        # Pour chaque arête, fusionner les composantes si elles sont différentes.
-        # À la fin, tous les pixels connectés seront dans la même composante.
+        """
+        Étape 3 : Kruskal - fusion des composantes via Union-Find
+        """
         ds = DisjointSetKruskal(size)
-
         for edge in edges:
-            # Essayer de fusionner les deux sommets de l'arête
             ds.unite(edge.u, edge.v)
 
-        # ====================================================================
-        # Étape 4 : Labellisation finale
-        # ====================================================================
-
-        # Remapper les représentants Union-Find en labels compacts
+        """
+        Étape 4 : Labellisation - remapper en labels compacts
+        """
         root_to_label = [0] * size
         next_label = 1
 
         for x in range(height):
             for y in range(width):
                 if input_image.at(x, y) == 0:
-                    labels.set_at(x, y, 0)  # Fond
+                    labels.set_at(x, y, 0)
                     continue
 
                 idx = Kruskal._get_index(x, y, width)
@@ -224,47 +210,26 @@ class Kruskal:
 
         for x in range(height):
             for y in range(width):
-                # Ignorer les pixels de fond
                 if input_image.at(x, y) == 0:
                     continue
 
                 current_idx = Kruskal._get_index(x, y, width)
 
                 if connectivity == 4:
-                    # Connectivité 4 : créer des arêtes vers Nord et Ouest
-
-                    # Nord (x-1, y)
                     if x > 0 and input_image.at(x - 1, y) != 0:
-                        neighbor_idx = Kruskal._get_index(x - 1, y, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
-
-                    # Ouest (x, y-1)
+                        edges.append(Edge(current_idx, Kruskal._get_index(x - 1, y, width), 1))
                     if y > 0 and input_image.at(x, y - 1) != 0:
-                        neighbor_idx = Kruskal._get_index(x, y - 1, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
+                        edges.append(Edge(current_idx, Kruskal._get_index(x, y - 1, width), 1))
 
                 elif connectivity == 8:
-                    # Connectivité 8 : créer des arêtes vers tous les voisins "avant"
-
-                    # Nord-Ouest (x-1, y-1)
                     if x > 0 and y > 0 and input_image.at(x - 1, y - 1) != 0:
-                        neighbor_idx = Kruskal._get_index(x - 1, y - 1, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
-
-                    # Nord (x-1, y)
+                        edges.append(Edge(current_idx, Kruskal._get_index(x - 1, y - 1, width), 1))
                     if x > 0 and input_image.at(x - 1, y) != 0:
-                        neighbor_idx = Kruskal._get_index(x - 1, y, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
-
-                    # Nord-Est (x-1, y+1)
+                        edges.append(Edge(current_idx, Kruskal._get_index(x - 1, y, width), 1))
                     if x > 0 and y < width - 1 and input_image.at(x - 1, y + 1) != 0:
-                        neighbor_idx = Kruskal._get_index(x - 1, y + 1, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
-
-                    # Ouest (x, y-1)
+                        edges.append(Edge(current_idx, Kruskal._get_index(x - 1, y + 1, width), 1))
                     if y > 0 and input_image.at(x, y - 1) != 0:
-                        neighbor_idx = Kruskal._get_index(x, y - 1, width)
-                        edges.append(Edge(current_idx, neighbor_idx, 1))
+                        edges.append(Edge(current_idx, Kruskal._get_index(x, y - 1, width), 1))
 
         return edges
 

@@ -118,14 +118,12 @@ def standard_deviation(data: List) -> float:
 
     avg = mean(data)
 
-    # Calcul de la variance
     variance = 0.0
     for value in data:
         diff = float(value) - avg
         variance += diff * diff
     variance /= len(data)
 
-    # Racine carrée manuelle (méthode de Newton-Raphson)
     return sqrt_manual(variance)
 
 
@@ -145,12 +143,10 @@ def sqrt_manual(x: float) -> float:
     if x == 0:
         return 0.0
 
-    # Estimation initiale
     guess = x / 2.0
-
-    # Méthode de Newton-Raphson
     epsilon = 1e-10
-    for _ in range(100):  # Maximum 100 itérations
+
+    for _ in range(100):
         new_guess = (guess + x / guess) / 2.0
         if abs(new_guess - guess) < epsilon:
             break
@@ -210,10 +206,8 @@ def _partition(data: List, low: int, high: int) -> int:
     for j in range(low, high):
         if data[j] < pivot:
             i += 1
-            # Échanger data[i] et data[j]
             data[i], data[j] = data[j], data[i]
 
-    # Échanger data[i+1] et data[high]
     data[i + 1], data[high] = data[high], data[i + 1]
 
     return i + 1
@@ -246,27 +240,20 @@ def get_neighbors(x: int, y: int, width: int, height: int, connectivity: int = 4
     neighbors = []
 
     if connectivity == 4:
-        # Connectivité 4 : Nord, Sud, Est, Ouest
-        # Nord (x-1, y)
         if x > 0:
             neighbors.append((x - 1, y))
-        # Sud (x+1, y)
         if x < height - 1:
             neighbors.append((x + 1, y))
-        # Est (x, y+1)
         if y < width - 1:
             neighbors.append((x, y + 1))
-        # Ouest (x, y-1)
         if y > 0:
             neighbors.append((x, y - 1))
 
     elif connectivity == 8:
-        # Connectivité 8 : Les 8 voisins
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
                 if dx == 0 and dy == 0:
-                    continue  # Ignorer le pixel lui-même
-
+                    continue
                 nx, ny = x + dx, y + dy
                 if 0 <= nx < height and 0 <= ny < width:
                     neighbors.append((nx, ny))

@@ -35,7 +35,6 @@ import sys
 import os
 from typing import List, Tuple
 
-# Ajouter le répertoire parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.image import Image, LabelImage
 
@@ -51,8 +50,7 @@ class EquivalenceTable:
     """
 
     def __init__(self):
-        """Initialise la table d'équivalence."""
-        # Label 0 réservé pour le fond
+        """Initialise la table d'équivalence. Label 0 réservé pour le fond."""
         self._parent = [0]
 
     def make_set(self) -> int:
@@ -63,7 +61,7 @@ class EquivalenceTable:
             Nouveau label
         """
         label = len(self._parent)
-        self._parent.append(label)  # Initialement, chaque label est sa propre racine
+        self._parent.append(label)
         return label
 
     def find(self, x: int) -> int:
@@ -79,7 +77,6 @@ class EquivalenceTable:
         if x <= 0 or x >= len(self._parent):
             return 0
 
-        # Path compression : faire pointer directement vers la racine
         if self._parent[x] != x:
             self._parent[x] = self.find(self._parent[x])
 
@@ -100,9 +97,8 @@ class EquivalenceTable:
         root_y = self.find(y)
 
         if root_x == root_y:
-            return  # Déjà dans la même classe
+            return
 
-        # Union : toujours pointer le plus grand vers le plus petit
         if root_x < root_y:
             self._parent[root_y] = root_x
         else:
@@ -136,17 +132,12 @@ class TwoPass:
         width = input_image.width
         height = input_image.height
 
-        # Créer l'image de labels
         labels = LabelImage(width, height)
-        labels.fill(0)  # 0 = fond
+        labels.fill(0)
 
-        # Créer la table d'équivalence
         equiv = EquivalenceTable()
 
-        # Première passe : étiquetage provisoire
         TwoPass._first_pass(input_image, labels, equiv, connectivity)
-
-        # Deuxième passe : relabellisation finale
         TwoPass._second_pass(labels, equiv)
 
         return labels
@@ -178,38 +169,30 @@ class TwoPass:
 
         for x in range(height):
             for y in range(width):
-                # Ignorer les pixels de fond (valeur 0)
                 if input_image.at(x, y) == 0:
                     labels.set_at(x, y, 0)
                     continue
 
-                # Pixel objet : examiner les voisins déjà traités
                 neighbors = TwoPass._get_previous_neighbors(x, y, width, height, connectivity)
 
-                # Collecter les labels des voisins objet
                 neighbor_labels = []
                 for nx, ny in neighbors:
-                    # Vérifier que le voisin est aussi un pixel objet
                     if input_image.at(nx, ny) != 0:
                         neighbor_label = labels.at(nx, ny)
                         if neighbor_label > 0:
                             neighbor_labels.append(neighbor_label)
 
                 if not neighbor_labels:
-                    # Cas a) : Aucun voisin objet -> nouveau label
                     new_label = equiv.make_set()
                     labels.set_at(x, y, new_label)
                 else:
-                    # Trouver le label minimum parmi les voisins
                     min_label = neighbor_labels[0]
                     for i in range(1, len(neighbor_labels)):
                         if neighbor_labels[i] < min_label:
                             min_label = neighbor_labels[i]
 
-                    # Affecter le label minimum au pixel courant
                     labels.set_at(x, y, min_label)
 
-                    # Cas c) : Enregistrer les équivalences entre labels
                     for i in range(len(neighbor_labels)):
                         if neighbor_labels[i] != min_label:
                             equiv.unite(min_label, neighbor_labels[i])
@@ -236,7 +219,6 @@ class TwoPass:
             for y in range(width):
                 label = labels.at(x, y)
                 if label > 0:
-                    # Trouver le label racine et l'affecter
                     labels.set_at(x, y, equiv.find(label))
 
     @staticmethod
@@ -269,27 +251,18 @@ class TwoPass:
         neighbors = []
 
         if connectivity == 4:
-            # Connectivité 4 : Nord et Ouest
-            # Nord (x-1, y)
             if x > 0:
                 neighbors.append((x - 1, y))
-            # Ouest (x, y-1)
             if y > 0:
                 neighbors.append((x, y - 1))
 
         elif connectivity == 8:
-            # Connectivité 8 : Nord-Ouest, Nord, Nord-Est, Ouest
-
-            # Nord-Ouest (x-1, y-1)
             if x > 0 and y > 0:
                 neighbors.append((x - 1, y - 1))
-            # Nord (x-1, y)
             if x > 0:
                 neighbors.append((x - 1, y))
-            # Nord-Est (x-1, y+1)
             if x > 0 and y < width - 1:
                 neighbors.append((x - 1, y + 1))
-            # Ouest (x, y-1)
             if y > 0:
                 neighbors.append((x, y - 1))
 

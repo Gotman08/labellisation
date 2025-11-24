@@ -41,7 +41,6 @@ import sys
 import os
 from typing import List
 
-# Ajouter le répertoire parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.image import Image, LabelImage
 
@@ -62,7 +61,6 @@ class DisjointSet:
         Args:
             size: Nombre d'éléments
         """
-        # Initialisation : chaque élément est sa propre racine
         self._parent = list(range(size))
         self._rank = [0] * size
 
@@ -81,7 +79,6 @@ class DisjointSet:
             Représentant (racine) de l'ensemble
         """
         if self._parent[x] != x:
-            # Path compression récursif
             self._parent[x] = self.find(self._parent[x])
         return self._parent[x]
 
@@ -103,15 +100,13 @@ class DisjointSet:
         root_y = self.find(y)
 
         if root_x == root_y:
-            return False  # Déjà dans le même ensemble
+            return False
 
-        # Union by rank
         if self._rank[root_x] < self._rank[root_y]:
             self._parent[root_x] = root_y
         elif self._rank[root_x] > self._rank[root_y]:
             self._parent[root_y] = root_x
         else:
-            # Rangs égaux : attacher root_y sous root_x et incrémenter le rang
             self._parent[root_y] = root_x
             self._rank[root_x] += 1
 
@@ -144,99 +139,60 @@ class UnionFind:
         height = input_image.height
         size = width * height
 
-        # Créer la structure Union-Find pour tous les pixels
         ds = DisjointSet(size)
-
-        # Créer l'image de labels
         labels = LabelImage(width, height)
         labels.fill(0)
 
-        # ====================================================================
-        # Phase 1 : Union des pixels adjacents
-        # ====================================================================
-
-        # Parcours de l'image pour fusionner les pixels adjacents
-        # Pour chaque pixel "objet" :
-        # - Examiner ses voisins (selon la connectivité)
-        # - Si un voisin est aussi "objet", fusionner leurs ensembles
-        #
-        # Note: On ne parcourt que les voisins "avant" (Nord et Ouest)
-        # pour éviter de traiter deux fois la même paire de pixels.
-
+        """
+        Phase 1 : Union des pixels adjacents
+        On parcourt les voisins "avant" (Nord/Ouest pour 4-conn,
+        + diagonales Nord-Ouest/Nord-Est pour 8-conn) pour éviter
+        de traiter deux fois la même paire.
+        """
         for x in range(height):
             for y in range(width):
-                # Ignorer les pixels de fond
                 if input_image.at(x, y) == 0:
                     continue
 
                 current_idx = UnionFind._get_index(x, y, width)
 
-                # Examiner les voisins "précédents" pour éviter les doublons
                 if connectivity == 4:
-                    # Connectivité 4 : vérifier Nord et Ouest
-
-                    # Nord (x-1, y)
                     if x > 0 and input_image.at(x - 1, y) != 0:
-                        neighbor_idx = UnionFind._get_index(x - 1, y, width)
-                        ds.unite(current_idx, neighbor_idx)
-
-                    # Ouest (x, y-1)
+                        ds.unite(current_idx, UnionFind._get_index(x - 1, y, width))
                     if y > 0 and input_image.at(x, y - 1) != 0:
-                        neighbor_idx = UnionFind._get_index(x, y - 1, width)
-                        ds.unite(current_idx, neighbor_idx)
+                        ds.unite(current_idx, UnionFind._get_index(x, y - 1, width))
 
                 elif connectivity == 8:
-                    # Connectivité 8 : vérifier Nord-Ouest, Nord, Nord-Est, Ouest
-
-                    # Nord-Ouest (x-1, y-1)
                     if x > 0 and y > 0 and input_image.at(x - 1, y - 1) != 0:
-                        neighbor_idx = UnionFind._get_index(x - 1, y - 1, width)
-                        ds.unite(current_idx, neighbor_idx)
-
-                    # Nord (x-1, y)
+                        ds.unite(current_idx, UnionFind._get_index(x - 1, y - 1, width))
                     if x > 0 and input_image.at(x - 1, y) != 0:
-                        neighbor_idx = UnionFind._get_index(x - 1, y, width)
-                        ds.unite(current_idx, neighbor_idx)
-
-                    # Nord-Est (x-1, y+1)
+                        ds.unite(current_idx, UnionFind._get_index(x - 1, y, width))
                     if x > 0 and y < width - 1 and input_image.at(x - 1, y + 1) != 0:
-                        neighbor_idx = UnionFind._get_index(x - 1, y + 1, width)
-                        ds.unite(current_idx, neighbor_idx)
-
-                    # Ouest (x, y-1)
+                        ds.unite(current_idx, UnionFind._get_index(x - 1, y + 1, width))
                     if y > 0 and input_image.at(x, y - 1) != 0:
-                        neighbor_idx = UnionFind._get_index(x, y - 1, width)
-                        ds.unite(current_idx, neighbor_idx)
+                        ds.unite(current_idx, UnionFind._get_index(x, y - 1, width))
 
-        # ====================================================================
-        # Phase 2 : Labellisation finale
-        # ====================================================================
-
-        # Convertir les représentants Union-Find en labels compacts
-        #
-        # Les représentants Union-Find peuvent avoir des valeurs dispersées
-        # (ex: 5, 42, 137...). On les remappe sur des labels compacts
-        # (ex: 1, 2, 3...) pour une meilleure visualisation.
-
-        # Première sous-passe : trouver tous les représentants uniques
+        """
+        Phase 2 : Labellisation finale
+        Remappe les représentants Union-Find (valeurs dispersées)
+        sur des labels compacts (1, 2, 3...).
+        """
         root_to_label = [0] * size
         next_label = 1
 
         for x in range(height):
             for y in range(width):
                 if input_image.at(x, y) == 0:
-                    labels.set_at(x, y, 0)  # Fond
+                    labels.set_at(x, y, 0)
                     continue
 
                 idx = UnionFind._get_index(x, y, width)
                 root = ds.find(idx)
 
-                # Si ce représentant n'a pas encore de label, lui en affecter un
                 if root_to_label[root] == 0:
                     root_to_label[root] = next_label
                     next_label += 1
 
-                # Affecter le label au pixel
                 labels.set_at(x, y, root_to_label[root])
 
         return labels

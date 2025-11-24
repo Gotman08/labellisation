@@ -45,7 +45,6 @@ import os
 from typing import List, Tuple
 from collections import deque
 
-# Ajouter le répertoire parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.image import Image, LabelImage
 from utils.utils import get_neighbors
@@ -78,24 +77,18 @@ class Prim:
         width = input_image.width
         height = input_image.height
 
-        # Créer l'image de labels
         labels = LabelImage(width, height)
-        labels.fill(0)  # 0 = non labellisé (fond)
-
+        labels.fill(0)
         current_label = 0
 
-        # ====================================================================
-        # Parcours de l'image pour trouver les composantes connexes
-        # ====================================================================
-
+        """
+        Parcours de l'image : pour chaque pixel objet non labellisé,
+        lancer un BFS pour explorer toute sa composante connexe.
+        """
         for x in range(height):
             for y in range(width):
-                # Si le pixel est un pixel "objet" et n'est pas encore labellisé
                 if input_image.at(x, y) != 0 and labels.at(x, y) == 0:
-                    # Nouvelle composante connexe trouvée
                     current_label += 1
-
-                    # Explorer toute la composante par BFS
                     Prim._bfs(input_image, labels, x, y, current_label, connectivity)
 
         return labels
@@ -122,28 +115,17 @@ class Prim:
         width = input_image.width
         height = input_image.height
 
-        # File pour le BFS : contient les coordonnées (x, y) des pixels à visiter
         queue = deque()
-
-        # Initialisation : ajouter le pixel de départ
         queue.append((start_x, start_y))
         labels.set_at(start_x, start_y, label)
 
-        # Parcours BFS
         while queue:
-            # Récupérer le prochain pixel
             x, y = queue.popleft()
-
-            # Examiner tous les voisins selon la connectivité
             neighbors = get_neighbors(x, y, width, height, connectivity)
 
             for nx, ny in neighbors:
-                # Vérifier si le voisin est un pixel "objet" non labellisé
                 if input_image.at(nx, ny) != 0 and labels.at(nx, ny) == 0:
-                    # Labelliser le voisin
                     labels.set_at(nx, ny, label)
-
-                    # Ajouter le voisin à la file pour exploration ultérieure
                     queue.append((nx, ny))
 
     @staticmethod
@@ -170,20 +152,14 @@ class Prim:
         width = input_image.width
         height = input_image.height
 
-        # Vérifications de base
         if not labels.is_valid(x, y):
             return
-
         if input_image.at(x, y) == 0:
-            return  # Pixel de fond
-
+            return
         if labels.at(x, y) != 0:
-            return  # Déjà labellisé
+            return
 
-        # Labelliser le pixel courant
         labels.set_at(x, y, label)
-
-        # Récursion sur tous les voisins
         neighbors = get_neighbors(x, y, width, height, connectivity)
 
         for nx, ny in neighbors:
